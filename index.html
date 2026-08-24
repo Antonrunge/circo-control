@@ -101,10 +101,11 @@
   }
   .brand{font-weight:700;font-size:1.05rem;}
   .brand span{color:var(--accent);}
-  .userInfo{display:flex;align-items:center;gap:.8rem;font-size:.85rem;color:var(--ink-soft);}
+  .userInfo{display:flex;align-items:center;gap:.8rem;font-size:.85rem;color:var(--ink-soft);min-width:0;}
+  .userInfo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .userInfo button{
     background:none;border:1px solid var(--rule);border-radius:6px;
-    padding:.35rem .7rem;cursor:pointer;color:var(--ink-soft);
+    padding:.35rem .7rem;cursor:pointer;color:var(--ink-soft);flex-shrink:0;
   }
   .layout{display:flex;max-width:1200px;margin:0 auto;}
   nav.side{
@@ -241,11 +242,53 @@
   }
   .estoqueBaixo{color:var(--accent-ink);font-weight:600;}
 
+  /* ---------- Mobile: menu lateral vira gaveta deslizante ---------- */
+  .hamburgerBtn{
+    display:none;background:none;border:1px solid var(--rule);border-radius:6px;
+    padding:.4rem .65rem;cursor:pointer;font-size:1.15rem;color:var(--ink);line-height:1;
+  }
+  .navOverlay{display:none;position:fixed;inset:0;background:rgba(33,26,20,.45);z-index:19;}
+  .navOverlay.show{display:block;}
+  .topbarLeft{display:flex;align-items:center;gap:.7rem;}
+  .navUserInfo{display:none;}
+
+  .panel .panelBody{overflow-x:auto;} /* tabelas largas rolam dentro do card, nunca a página inteira */
+
   @media(max-width:760px){
+    .hamburgerBtn{display:inline-block;}
     .layout{flex-direction:column;}
-    nav.side{width:100%;border-right:none;border-bottom:1px solid var(--rule);
-      display:flex;overflow-x:auto;padding:.6rem;gap:.3rem;}
-    nav.side a{white-space:nowrap;margin-bottom:0;}
+    nav.side{
+      position:fixed;top:0;left:0;height:100vh;width:80%;max-width:300px;
+      background:var(--paper);z-index:20;transform:translateX(-105%);
+      transition:transform .22s ease-out;overflow-y:auto;padding:1.3rem 1rem;
+      display:block;border-right:1px solid var(--rule);
+      box-shadow:4px 0 24px rgba(33,26,20,.18);
+    }
+    nav.side.open{transform:translateX(0);}
+    nav.side a{white-space:normal;margin-bottom:.3rem;padding:.8rem .9rem;font-size:.95rem;}
+    .navUserInfo{
+      display:block;font-weight:700;font-size:.95rem;color:var(--ink);
+      padding:0 .9rem .9rem;margin-bottom:.6rem;border-bottom:1px solid var(--rule);
+    }
+    .navUserInfo span{display:block;font-weight:500;font-size:.8rem;color:var(--ink-faint);margin-top:.15rem;}
+    main{padding:1rem;}
+    h2.pageTitle{font-size:1.15rem;}
+    .grid{grid-template-columns:1fr 1fr;gap:.7rem;}
+    .card{padding:.9rem 1rem;}
+    .card .value{font-size:1.3rem;}
+    .panel .panelHead{flex-wrap:wrap;gap:.6rem;}
+    .panel .panelHead h3{font-size:.95rem;}
+    .modalBox{max-width:100%;max-height:88vh;overflow-y:auto;}
+    .pdvLayout{grid-template-columns:1fr;}
+    .inlineForm .field{min-width:100%;}
+    .userInfo span{max-width:34vw;font-size:.78rem;}
+    .userInfo{gap:.5rem;}
+  }
+  @media(max-width:400px){
+    .userInfo span{display:none;} /* nome/cargo somem em telas muito pequenas; o menu já mostra quem está logado */
+  }
+  @media(max-width:420px){
+    .grid{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -279,12 +322,16 @@
 <!-- ============ APP ============ -->
 <div id="app">
   <div class="topbar">
-    <div class="brand">🎪 Circo <span>Control</span></div>
+    <div class="topbarLeft">
+      <button class="hamburgerBtn" id="btnMenuMobile" aria-label="Abrir menu">☰</button>
+      <div class="brand">🎪 Circo <span>Control</span></div>
+    </div>
     <div class="userInfo">
       <span id="userNomeDisplay"></span>
       <button id="btnLogout">Sair</button>
     </div>
   </div>
+  <div class="navOverlay" id="navOverlay"></div>
   <div class="layout">
     <nav class="side" id="navMenu"></nav>
     <main id="mainArea"></main>
@@ -2032,8 +2079,11 @@ document.addEventListener("click", function(e){
   if((el = e.target.closest("[data-nav]"))){
     S.tab = el.dataset.nav;
     rT();
+    fecharMenuMobile();
     return;
   }
+  if(e.target.id === "btnMenuMobile"){ abrirMenuMobile(); return; }
+  if(e.target.id === "navOverlay"){ fecharMenuMobile(); return; }
   if((el = e.target.closest("[data-abrir-temporada]"))){
     abrirModalTemporada(el.dataset.abrirTemporada);
     return;
@@ -2143,10 +2193,19 @@ document.addEventListener("input", function(e){
 /* ==========================================================
    CAMADA 9 — FUNÇÃO MAESTRO
    ========================================================== */
+function abrirMenuMobile(){
+  document.getElementById("navMenu").classList.add("open");
+  document.getElementById("navOverlay").classList.add("show");
+}
+function fecharMenuMobile(){
+  document.getElementById("navMenu").classList.remove("open");
+  document.getElementById("navOverlay").classList.remove("show");
+}
+
 function montarMenu(){
   var papel = S.usuarioAtual.papel;
   var abasPermitidas = ROLE_TABS[papel] || ["dashboard"];
-  var html = "";
+  var html = '<div class="navUserInfo">'+es(S.usuarioAtual.nome)+'<span>'+es(PAPEL_LABEL[papel]||papel)+'</span></div>';
   NAV.forEach(function(item){
     if(abasPermitidas.indexOf(item.id) === -1) return;
     var activeCls = (S.tab === item.id) ? " active" : "";
