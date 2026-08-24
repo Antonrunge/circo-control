@@ -346,6 +346,57 @@
   </div>
 </div>
 
+<!-- ============ MODAL: FUNCIONÁRIO ============ -->
+<div class="modalOverlay" id="modalFuncionario">
+  <div class="modalBox">
+    <h3 id="modalFuncionarioTitulo">Novo funcionário</h3>
+    <div class="field"><label>Nome</label><input id="ffNome" placeholder="Nome completo"></div>
+    <div class="field"><label>CPF</label><input id="ffCpf" placeholder="000.000.000-00"></div>
+    <div class="field"><label>Telefone</label><input id="ffTelefone" placeholder="(00) 00000-0000"></div>
+    <div class="field"><label>Função</label><input id="ffFuncao" placeholder="Ex: Trapezista, Montador, Bilheteiro"></div>
+    <div class="field"><label>Setor</label><input id="ffSetor" placeholder="Ex: Espetáculo, Bilheteria, Estrutura"></div>
+    <div class="field">
+      <label>Tipo de vínculo</label>
+      <select id="ffTipoVinculo"></select>
+    </div>
+    <div class="field"><label>Valor</label><input type="number" id="ffValor" min="0" step="0.01" placeholder="0,00"></div>
+    <div class="field">
+      <label>Periodicidade</label>
+      <select id="ffPeriodicidade"><option value="semanal">Semanal</option><option value="mensal">Mensal</option></select>
+    </div>
+    <div class="field"><label>Banco</label><input id="ffBanco" placeholder="Opcional"></div>
+    <div class="field"><label>Chave PIX</label><input id="ffPix" placeholder="Opcional"></div>
+    <div class="field" style="display:flex;align-items:center;gap:.5rem;">
+      <input type="checkbox" id="ffAtivo" style="width:auto;"><label style="margin:0;">Funcionário ativo</label>
+    </div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarFuncionario">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarFuncionario">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: FOLHA ============ -->
+<div class="modalOverlay" id="modalFolha">
+  <div class="modalBox">
+    <h3>Nova folha</h3>
+    <div class="field"><label>Funcionário</label><select id="ffoFuncionario"></select></div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="ffoTipo"><option value="semanal">Semanal</option><option value="mensal">Mensal</option></select>
+    </div>
+    <div class="field"><label>Período</label><input id="ffoPeriodo" placeholder="Ex: 18/08 a 24/08, ou Agosto/2026"></div>
+    <div class="field"><label>Temporada (opcional)</label><select id="ffoTemporada"></select></div>
+    <div class="field"><label>Valor base</label><input type="number" id="ffoValorBase" min="0" step="0.01"></div>
+    <div class="field"><label>Adicionais / comissões / cachês extra</label><input type="number" id="ffoAdicionais" min="0" step="0.01"></div>
+    <div class="field"><label>Descontos / adiantamentos</label><input type="number" id="ffoDescontos" min="0" step="0.01"></div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarFolha">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarFolha">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODAL: NOVO USUÁRIO ============ -->
 <div class="modalOverlay" id="modalUsuario">
   <div class="modalBox">
@@ -539,21 +590,23 @@ var NAV = [
   {id:"alimentacao",  label:"Alimentação"},
   {id:"estoque",      label:"Estoque"},
   {id:"financeiro",   label:"Financeiro"},
+  {id:"pessoas",      label:"Pessoas"},
+  {id:"folha",        label:"Folha"},
   {id:"relatorios",   label:"Relatórios"},
   {id:"config",       label:"Configurações"}
 ];
 
 var ROLE_TABS = {
-  superadmin: ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","relatorios","config"],
-  diretor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","relatorios","config"],
-  gerente:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","relatorios"],
-  financeiro: ["dashboard","temporadas","bilheteria","alimentacao","financeiro","relatorios"],
-  rh:         ["dashboard"],
+  superadmin: ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","relatorios","config"],
+  diretor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","relatorios","config"],
+  gerente:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","relatorios"],
+  financeiro: ["dashboard","temporadas","bilheteria","alimentacao","financeiro","folha","relatorios"],
+  rh:         ["dashboard","pessoas","folha"],
   bilheteria: ["dashboard","sessoes","bilheteria"],
   caixa:      ["dashboard","alimentacao"],
   estoque:    ["dashboard","estoque","alimentacao"],
   marketing:  ["dashboard","locais","relatorios"],
-  auditor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","relatorios"]
+  auditor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","relatorios"]
 };
 
 var TIPO_SESSAO_LABEL = {normal:"Normal", matine:"Matinê", especial:"Especial", estreia:"Estreia"};
@@ -583,6 +636,14 @@ var LOCAL_STATUS = {
   potencial: {txt:"Local potencial", cls:"yellow"},
   utilizado: {txt:"Já utilizado", cls:"green"},
   descartado:{txt:"Descartado", cls:"gray"}
+};
+
+var TIPO_VINCULO = ["CLT","Diarista","Cachê","Prestador de serviço","Temporário"];
+
+var FOLHA_STATUS = {
+  pendente: {txt:"Pendente", cls:"yellow"},
+  aprovado: {txt:"Aprovado", cls:"gray"},
+  pago:     {txt:"Pago", cls:"green"}
 };
 
 var PAPEL_LABEL = {
@@ -636,7 +697,13 @@ var S = {
   // Fase 4 — Locais e Relatórios/BI
   locais: [],
   editandoLocalId: null,
-  temporadaDetalheRelatorio: "" // temporada selecionada no "puxar menu" de relatórios
+  temporadaDetalheRelatorio: "", // temporada selecionada no "puxar menu" de relatórios
+
+  // Fase 4.2 — Pessoas e Folha de pagamento
+  funcionarios: [],
+  folhas: [],
+  editandoFuncionarioId: null,
+  editandoFolhaId: null
 };
 
 /* ==========================================================
@@ -683,6 +750,10 @@ function diasAtras(isoDatetimeOuData){
   var d = new Date(soData(isoDatetimeOuData)+"T00:00:00");
   var hoje = new Date(hj()+"T00:00:00");
   return Math.round((hoje-d)/(1000*60*60*24));
+}
+function funcionarioNome(id){
+  var f = S.funcionarios.find(function(x){return x.id===id;});
+  return f ? f.nome : "—";
 }
 function centroCustoNome(id){
   var c = S.centrosCusto.find(function(x){return x.id===id;});
@@ -813,6 +884,8 @@ function rDashboard(){
   html += cardKpi("Despesas hoje", fmt(despesaHoje), "Contas pagas hoje");
   html += cardKpi("Contas vencidas", contasVencidas.length, contasVencidas.length ? "Verifique em Financeiro" : "Nenhuma pendência vencida");
   html += cardKpi("Contas a vencer (7 dias)", contasAVencer.length, "Fique de olho no fluxo de caixa");
+  var folhaPendente = S.folhas.filter(function(f){return f.status!=="pago";}).reduce(function(a,f){return a+(f.totalPagar||0);},0);
+  html += cardKpi("Folha pendente", fmt(folhaPendente), "A pagar à equipe");
   html += cardKpi("Temporadas ativas", ativas.length, ativas.length ? ativas.map(function(t){return t.cidade;}).join(", ") : "Nenhuma temporada ativa");
   html += '</div>';
 
@@ -1318,6 +1391,63 @@ function rRelatorios(){
   return html;
 }
 
+function rPessoas(){
+  var html = '<h2 class="pageTitle">Pessoas</h2>';
+  html += '<div class="panel"><div class="panelHead"><h3>Equipe e colaboradores</h3><button class="btnSmall" data-abrir-funcionario="novo">+ Novo funcionário</button></div><div class="panelBody">';
+  var lista = S.funcionarios.slice().sort(function(a,b){return (a.nome||"").localeCompare(b.nome||"");});
+  if(lista.length===0){
+    html += '<div class="emptyState">Nenhum funcionário ou colaborador cadastrado ainda.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Nome</th><th>Função</th><th>Setor</th><th>Vínculo</th><th>Valor</th><th>Situação</th><th></th></tr></thead><tbody>';
+    lista.forEach(function(f){
+      html += '<tr><td>'+es(f.nome)+'</td><td>'+es(f.funcao)+'</td><td>'+es(f.setor)+'</td><td>'+es(f.tipoVinculo)+'</td>'
+        + '<td>'+fmt(f.valor)+' <span style="color:var(--ink-faint);font-size:.78rem">/'+es(f.periodicidade)+'</span></td>'
+        + '<td>'+(f.ativo!==false ? '<span class="statusPill green">Ativo</span>' : '<span class="statusPill gray">Inativo</span>')+'</td>'
+        + '<td><button class="btnSmall ghost" data-abrir-funcionario="'+es(f.id)+'">Editar</button></td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function rFolha(){
+  var html = '<h2 class="pageTitle">Folha de pagamento</h2>';
+
+  var pendentes = S.folhas.filter(function(f){return f.status!=="pago";});
+  var totalPendente = pendentes.reduce(function(a,f){return a+(f.totalPagar||0);},0);
+  var pagoNoMes = S.folhas.filter(function(f){return f.status==="pago" && diasAtras(f.pagoEm)<=30;}).reduce(function(a,f){return a+(f.totalPagar||0);},0);
+
+  html += '<div class="grid">';
+  html += cardKpi("A pagar (pendente/aprovado)", fmt(totalPendente), pendentes.length+" lançamento(s)");
+  html += cardKpi("Pago nos últimos 30 dias", fmt(pagoNoMes), "Folha semanal + mensal");
+  html += cardKpi("Funcionários ativos", S.funcionarios.filter(function(f){return f.ativo!==false;}).length, "Elegíveis para folha");
+  html += '</div>';
+
+  html += '<div class="panel"><div class="panelHead"><h3>Lançamentos de folha</h3><button class="btnSmall" data-abrir-folha="nova">+ Nova folha</button></div><div class="panelBody">';
+  if(S.funcionarios.length===0){
+    html += '<div class="emptyState">Cadastre funcionários em <strong>Pessoas</strong> antes de lançar a folha.</div>';
+  } else if(S.folhas.length===0){
+    html += '<div class="emptyState">Nenhum lançamento de folha ainda.</div>';
+  } else {
+    var ordenadas = S.folhas.slice().sort(function(a,b){return (b.dataReferencia||"").localeCompare(a.dataReferencia||"");});
+    html += '<table class="list"><thead><tr><th>Funcionário</th><th>Tipo</th><th>Período</th><th>Base</th><th>Adicionais</th><th>Descontos</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>';
+    ordenadas.forEach(function(f){
+      var s = FOLHA_STATUS[f.status] || FOLHA_STATUS.pendente;
+      var acao = "";
+      if(f.status==="pendente") acao = '<button class="btnSmall ghost" data-aprovar-folha="'+es(f.id)+'">Aprovar</button>';
+      else if(f.status==="aprovado") acao = '<button class="btnSmall ghost" data-pagar-folha="'+es(f.id)+'">Marcar pago</button>';
+      html += '<tr><td>'+es(funcionarioNome(f.funcionarioId))+'</td><td>'+(f.tipo==="semanal"?"Semanal":"Mensal")+'</td><td>'+es(f.periodo)+'</td>'
+        + '<td>'+fmt(f.valorBase)+'</td><td>'+fmt(f.adicionais)+'</td><td>-'+fmt(f.descontos)+'</td><td><strong>'+fmt(f.totalPagar)+'</strong></td>'
+        + '<td><span class="statusPill '+s.cls+'">'+s.txt+'</span></td><td>'+acao+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
 /* ==========================================================
    CAMADA 7 — FUNÇÕES DE AÇÃO
    ========================================================== */
@@ -1787,6 +1917,112 @@ function salvarLocal(){
   ref.set(dados, {merge:true}).then(fecharModalLocal).catch(function(err){ alert("Erro ao salvar: "+err.message); });
 }
 
+/* ---------- Pessoas ---------- */
+function abrirModalFuncionario(id){
+  S.editandoFuncionarioId = (id==="novo") ? null : id;
+  var f = S.editandoFuncionarioId ? S.funcionarios.find(function(x){return x.id===S.editandoFuncionarioId;}) : null;
+  document.getElementById("modalFuncionarioTitulo").textContent = f ? "Editar funcionário" : "Novo funcionário";
+  document.getElementById("ffTipoVinculo").innerHTML = TIPO_VINCULO.map(function(v){return '<option value="'+v+'">'+v+'</option>';}).join("");
+  document.getElementById("ffNome").value = f ? f.nome : "";
+  document.getElementById("ffCpf").value = f ? f.cpf : "";
+  document.getElementById("ffTelefone").value = f ? f.telefone : "";
+  document.getElementById("ffFuncao").value = f ? f.funcao : "";
+  document.getElementById("ffSetor").value = f ? f.setor : "";
+  document.getElementById("ffTipoVinculo").value = f ? f.tipoVinculo : TIPO_VINCULO[0];
+  document.getElementById("ffValor").value = f ? f.valor : "";
+  document.getElementById("ffPeriodicidade").value = f ? f.periodicidade : "semanal";
+  document.getElementById("ffBanco").value = f ? f.banco : "";
+  document.getElementById("ffPix").value = f ? f.pix : "";
+  document.getElementById("ffAtivo").checked = f ? (f.ativo!==false) : true;
+  document.getElementById("modalFuncionario").classList.add("show");
+}
+function fecharModalFuncionario(){ document.getElementById("modalFuncionario").classList.remove("show"); }
+function salvarFuncionario(){
+  var nome = document.getElementById("ffNome").value.trim();
+  if(!nome){ alert("Informe o nome do funcionário."); return; }
+  var dados = {
+    nome: nome,
+    cpf: document.getElementById("ffCpf").value.trim(),
+    telefone: document.getElementById("ffTelefone").value.trim(),
+    funcao: document.getElementById("ffFuncao").value.trim(),
+    setor: document.getElementById("ffSetor").value.trim(),
+    tipoVinculo: document.getElementById("ffTipoVinculo").value,
+    valor: Number(document.getElementById("ffValor").value)||0,
+    periodicidade: document.getElementById("ffPeriodicidade").value,
+    banco: document.getElementById("ffBanco").value.trim(),
+    pix: document.getElementById("ffPix").value.trim(),
+    ativo: document.getElementById("ffAtivo").checked,
+    empresaId: EMPRESA_ID
+  };
+  var ref = S.editandoFuncionarioId ? db.collection("funcionarios").doc(S.editandoFuncionarioId) : db.collection("funcionarios").doc();
+  ref.set(dados, {merge:true}).then(fecharModalFuncionario).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+
+/* ---------- Folha de pagamento ---------- */
+function abrirModalFolha(){
+  var ativos = S.funcionarios.filter(function(f){return f.ativo!==false;});
+  var selFunc = document.getElementById("ffoFuncionario");
+  selFunc.innerHTML = ativos.map(function(f){return '<option value="'+es(f.id)+'" data-valor="'+f.valor+'">'+es(f.nome)+' — '+es(f.funcao)+'</option>';}).join("");
+  var selTemp = document.getElementById("ffoTemporada");
+  selTemp.innerHTML = '<option value="">Nenhuma</option>' + S.temporadas.map(function(t){return '<option value="'+es(t.id)+'">'+es(t.nome)+' — '+es(t.cidade)+'</option>';}).join("");
+  document.getElementById("ffoTipo").value = "semanal";
+  document.getElementById("ffoPeriodo").value = "";
+  document.getElementById("ffoValorBase").value = ativos[0] ? ativos[0].valor : "";
+  document.getElementById("ffoAdicionais").value = "0";
+  document.getElementById("ffoDescontos").value = "0";
+  document.getElementById("modalFolha").classList.add("show");
+}
+function fecharModalFolha(){ document.getElementById("modalFolha").classList.remove("show"); }
+function preencherValorBaseFolha(){
+  var opt = document.getElementById("ffoFuncionario").selectedOptions[0];
+  if(opt){ document.getElementById("ffoValorBase").value = opt.dataset.valor || 0; }
+}
+function salvarFolha(){
+  var funcionarioId = document.getElementById("ffoFuncionario").value;
+  var periodo = document.getElementById("ffoPeriodo").value.trim();
+  var valorBase = Number(document.getElementById("ffoValorBase").value)||0;
+  var adicionais = Number(document.getElementById("ffoAdicionais").value)||0;
+  var descontos = Number(document.getElementById("ffoDescontos").value)||0;
+  if(!funcionarioId || !periodo){ alert("Selecione o funcionário e informe o período."); return; }
+  var dados = {
+    funcionarioId: funcionarioId,
+    tipo: document.getElementById("ffoTipo").value,
+    periodo: periodo,
+    dataReferencia: hj(),
+    temporadaId: document.getElementById("ffoTemporada").value || null,
+    valorBase: valorBase,
+    adicionais: adicionais,
+    descontos: descontos,
+    totalPagar: Math.max(0, valorBase+adicionais-descontos),
+    status: "pendente",
+    empresaId: EMPRESA_ID
+  };
+  db.collection("folhas").doc().set(dados).then(fecharModalFolha).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+function aprovarFolha(id){
+  db.collection("folhas").doc(id).update({status:"aprovado"}).catch(function(err){ alert("Erro: "+err.message); });
+}
+function pagarFolha(id){
+  var f = S.folhas.find(function(x){return x.id===id;});
+  if(!f) return;
+  var lote = db.batch();
+  lote.update(db.collection("folhas").doc(id), {status:"pago", pagoEm:new Date().toISOString()});
+  // Regra de ouro: pagar a folha já lança a despesa correspondente no Financeiro, sem precisar cadastrar de novo.
+  lote.set(db.collection("contasPagar").doc(), {
+    descricao: "Folha — "+funcionarioNome(f.funcionarioId)+" ("+f.periodo+")",
+    categoria: "Salários",
+    centroCustoId: null,
+    temporadaId: f.temporadaId || null,
+    vencimento: hj(),
+    valor: f.totalPagar,
+    status: "pago",
+    pagoEm: new Date().toISOString(),
+    origemFolhaId: id,
+    empresaId: EMPRESA_ID
+  });
+  lote.commit().catch(function(err){ alert("Erro: "+err.message); });
+}
+
 /* ==========================================================
    CAMADA 8 — LISTENER DE CLIQUE ÚNICO (DELEGAÇÃO)
    ========================================================== */
@@ -1860,6 +2096,16 @@ document.addEventListener("click", function(e){
   if((el = e.target.closest("[data-abrir-local]"))){ abrirModalLocal(el.dataset.abrirLocal); return; }
   if(e.target.id === "btnCancelarLocal"){ fecharModalLocal(); return; }
   if(e.target.id === "btnSalvarLocal"){ salvarLocal(); return; }
+
+  if((el = e.target.closest("[data-abrir-funcionario]"))){ abrirModalFuncionario(el.dataset.abrirFuncionario); return; }
+  if(e.target.id === "btnCancelarFuncionario"){ fecharModalFuncionario(); return; }
+  if(e.target.id === "btnSalvarFuncionario"){ salvarFuncionario(); return; }
+
+  if((el = e.target.closest("[data-abrir-folha]"))){ abrirModalFolha(); return; }
+  if(e.target.id === "btnCancelarFolha"){ fecharModalFolha(); return; }
+  if(e.target.id === "btnSalvarFolha"){ salvarFolha(); return; }
+  if((el = e.target.closest("[data-aprovar-folha]"))){ aprovarFolha(el.dataset.aprovarFolha); return; }
+  if((el = e.target.closest("[data-pagar-folha]"))){ pagarFolha(el.dataset.pagarFolha); return; }
 });
 
 document.addEventListener("change", function(e){
@@ -1884,6 +2130,7 @@ document.addEventListener("change", function(e){
     }
     return;
   }
+  if(e.target.id === "ffoFuncionario"){ preencherValorBaseFolha(); return; }
 });
 
 // Campos de texto/número são gravados a cada tecla, sem esperar "change" (blur),
@@ -1920,6 +2167,8 @@ function rT(){
   else if(S.tab === "estoque") html = rEstoque();
   else if(S.tab === "financeiro") html = rFinanceiro();
   else if(S.tab === "locais") html = rLocais();
+  else if(S.tab === "pessoas") html = rPessoas();
+  else if(S.tab === "folha") html = rFolha();
   else if(S.tab === "relatorios") html = rRelatorios();
   else if(S.tab === "config") html = rConfig();
   else html = rDashboard();
@@ -1955,6 +2204,13 @@ function ativarListenerSobDemanda(tab){
   }
   if(tab==="temporadas" || tab==="locais" || tab==="relatorios"){
     ligar("locais","locais",["empresaId","==",EMPRESA_ID]);
+  }
+  if(tab==="pessoas" || tab==="folha"){
+    ligar("funcionarios","funcionarios",["empresaId","==",EMPRESA_ID]);
+    ligar("folhas","folhas",["empresaId","==",EMPRESA_ID]);
+  }
+  if(tab==="dashboard"){
+    ligar("folhas","folhas",["empresaId","==",EMPRESA_ID]);
   }
 }
 
