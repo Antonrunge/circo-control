@@ -200,6 +200,47 @@
     border-radius:8px;padding:.9rem 1.1rem;font-size:.85rem;margin-bottom:1.2rem;
   }
 
+  /* ---------- Sub-navegação por temporada ---------- */
+  .subFiltro{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem;flex-wrap:wrap;}
+  .subFiltro label{font-size:.82rem;color:var(--ink-soft);}
+  .subFiltro select{
+    padding:.5rem .7rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper);
+  }
+
+  /* ---------- Inline forms (Bilheteria/PDV/Estoque) ---------- */
+  .inlineForm{display:flex;flex-wrap:wrap;gap:.7rem;align-items:flex-end;}
+  .inlineForm .field{margin-bottom:0;min-width:150px;flex:1;}
+  .inlineForm .field.small{min-width:90px;flex:0 0 90px;}
+  .inlineForm select, .inlineForm input{
+    width:100%;padding:.55rem .7rem;border:1px solid var(--rule);border-radius:6px;background:var(--bg);
+  }
+
+  /* ---------- Carrinho PDV ---------- */
+  .pdvLayout{display:grid;grid-template-columns:1.6fr 1fr;gap:1.2rem;}
+  @media(max-width:900px){.pdvLayout{grid-template-columns:1fr;}}
+  .produtoBtn{
+    display:flex;justify-content:space-between;align-items:center;width:100%;
+    background:var(--paper);border:1px solid var(--rule);border-radius:8px;
+    padding:.7rem .9rem;margin-bottom:.5rem;cursor:pointer;text-align:left;
+  }
+  .produtoBtn:hover{border-color:var(--accent-soft);background:var(--bg);}
+  .produtoBtn .nome{font-weight:600;font-size:.9rem;}
+  .produtoBtn .preco{color:var(--accent-ink);font-weight:700;font-size:.9rem;}
+  .produtoBtn .estq{font-size:.75rem;color:var(--ink-faint);}
+  .carrinhoItem{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--rule);font-size:.88rem;}
+  .carrinhoItem .qtdCtrl{display:flex;align-items:center;gap:.4rem;}
+  .carrinhoItem .qtdCtrl button{
+    width:22px;height:22px;border:1px solid var(--rule);background:var(--paper);border-radius:4px;cursor:pointer;
+  }
+  .carrinhoTotal{display:flex;justify-content:space-between;font-weight:700;font-size:1.05rem;padding-top:.8rem;margin-top:.4rem;border-top:2px solid var(--ink);}
+
+  /* ---------- QR / código de ingresso ---------- */
+  .qrCodeBox{
+    font-family:monospace;background:var(--bg);border:1px dashed var(--rule);
+    border-radius:6px;padding:.3rem .5rem;font-size:.8rem;letter-spacing:.03em;display:inline-block;
+  }
+  .estoqueBaixo{color:var(--accent-ink);font-weight:600;}
+
   @media(max-width:760px){
     .layout{flex-direction:column;}
     nav.side{width:100%;border-right:none;border-bottom:1px solid var(--rule);
@@ -307,6 +348,84 @@
   </div>
 </div>
 
+<!-- ============ MODAL: NOVA SESSÃO ============ -->
+<div class="modalOverlay" id="modalSessao">
+  <div class="modalBox">
+    <h3 id="modalSessaoTitulo">Nova sessão</h3>
+    <div class="field"><label>Data</label><input type="date" id="fsData"></div>
+    <div class="field"><label>Hora</label><input type="time" id="fsHora"></div>
+    <div class="field"><label>Capacidade</label><input type="number" id="fsCapacidade" min="0" placeholder="Ex: 500"></div>
+    <div class="field">
+      <label>Tipo de sessão</label>
+      <select id="fsTipo">
+        <option value="normal">Normal</option>
+        <option value="matine">Matinê</option>
+        <option value="especial">Especial</option>
+        <option value="estreia">Estreia</option>
+      </select>
+    </div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarSessao">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarSessao">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: TIPO DE INGRESSO ============ -->
+<div class="modalOverlay" id="modalTipoIngresso">
+  <div class="modalBox">
+    <h3>Novo tipo de ingresso</h3>
+    <div class="field"><label>Nome (ex: Inteira, Meia, VIP)</label><input id="ftiNome" placeholder="Ex: Inteira"></div>
+    <div class="field"><label>Preço (R$)</label><input type="number" id="ftiPreco" min="0" step="0.01" placeholder="0,00"></div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarTipoIngresso">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarTipoIngresso">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: PRODUTO (ALIMENTAÇÃO) ============ -->
+<div class="modalOverlay" id="modalProduto">
+  <div class="modalBox">
+    <h3 id="modalProdutoTitulo">Novo produto</h3>
+    <div class="field"><label>Nome</label><input id="fpNome" placeholder="Ex: Pipoca"></div>
+    <div class="field"><label>Unidade</label><input id="fpUnidade" placeholder="Ex: unidade, kg, pacote"></div>
+    <div class="field"><label>Custo (R$)</label><input type="number" id="fpCusto" min="0" step="0.01" placeholder="0,00"></div>
+    <div class="field"><label>Preço de venda (R$)</label><input type="number" id="fpPreco" min="0" step="0.01" placeholder="0,00"></div>
+    <div class="field"><label>Estoque atual</label><input type="number" id="fpEstoqueAtual" min="0" placeholder="0"></div>
+    <div class="field"><label>Estoque mínimo (alerta)</label><input type="number" id="fpEstoqueMinimo" min="0" placeholder="0"></div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarProduto">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarProduto">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: MOVIMENTO DE ESTOQUE ============ -->
+<div class="modalOverlay" id="modalMovimento">
+  <div class="modalBox">
+    <h3>Registrar movimento</h3>
+    <div class="field">
+      <label>Produto</label>
+      <select id="fmProduto"></select>
+    </div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="fmTipo">
+        <option value="entrada">Entrada</option>
+        <option value="saida">Saída</option>
+        <option value="perda">Perda</option>
+      </select>
+    </div>
+    <div class="field"><label>Quantidade</label><input type="number" id="fmQuantidade" min="1" placeholder="0"></div>
+    <div class="field"><label>Motivo / observação</label><input id="fmMotivo" placeholder="Opcional"></div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarMovimento">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarMovimento">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -337,23 +456,37 @@ var db = firebase.firestore();
 var EMPRESA_ID = "circo_principal"; // Fase 1: uma empresa só. Multiempresa vem depois.
 
 var NAV = [
-  {id:"dashboard",  label:"Dashboard"},
-  {id:"temporadas", label:"Temporadas"},
-  {id:"config",     label:"Configurações"}
+  {id:"dashboard",    label:"Dashboard"},
+  {id:"temporadas",   label:"Temporadas"},
+  {id:"sessoes",      label:"Sessões"},
+  {id:"bilheteria",   label:"Bilheteria"},
+  {id:"alimentacao",  label:"Alimentação"},
+  {id:"estoque",      label:"Estoque"},
+  {id:"config",       label:"Configurações"}
 ];
 
 var ROLE_TABS = {
-  superadmin: ["dashboard","temporadas","config"],
-  diretor:    ["dashboard","temporadas","config"],
-  gerente:    ["dashboard","temporadas"],
-  financeiro: ["dashboard","temporadas"],
+  superadmin: ["dashboard","temporadas","sessoes","bilheteria","alimentacao","estoque","config"],
+  diretor:    ["dashboard","temporadas","sessoes","bilheteria","alimentacao","estoque","config"],
+  gerente:    ["dashboard","temporadas","sessoes","bilheteria","alimentacao","estoque"],
+  financeiro: ["dashboard","temporadas","bilheteria","alimentacao"],
   rh:         ["dashboard"],
-  bilheteria: ["dashboard"],
-  caixa:      ["dashboard"],
-  estoque:    ["dashboard"],
+  bilheteria: ["dashboard","sessoes","bilheteria"],
+  caixa:      ["dashboard","alimentacao"],
+  estoque:    ["dashboard","estoque","alimentacao"],
   marketing:  ["dashboard"],
-  auditor:    ["dashboard","temporadas"]
+  auditor:    ["dashboard","temporadas","sessoes","bilheteria","alimentacao","estoque"]
 };
+
+var TIPO_SESSAO_LABEL = {normal:"Normal", matine:"Matinê", especial:"Especial", estreia:"Estreia"};
+
+var INGRESSO_STATUS = {
+  valido: {txt:"Válido", cls:"green"},
+  usado:  {txt:"Usado", cls:"gray"},
+  cancelado: {txt:"Cancelado", cls:"red"}
+};
+
+var MOVIMENTO_LABEL = {entrada:"Entrada", saida:"Saída", perda:"Perda"};
 
 var PAPEL_LABEL = {
   superadmin:"Super administrador", diretor:"Diretor / Proprietário", gerente:"Gerente geral",
@@ -377,7 +510,21 @@ var S = {
   temporadas: [],
   usuarios: [],
   editandoTemporadaId: null,
-  modoLogin: "entrar"   // "entrar" | "cadastrar"
+  modoLogin: "entrar",  // "entrar" | "cadastrar"
+
+  // Fase 2 — Operação
+  temporadaFiltro: "",     // id da temporada selecionada nas telas de Sessões/Bilheteria
+  sessoes: [],
+  tiposIngresso: [],
+  ingressos: [],
+  produtos: [],
+  movimentosEstoque: [],
+  carrinhoPdv: [],          // [{produtoId, nome, precoUnit, qtd}]
+  formaPagamentoPdv: "dinheiro",
+  editandoSessaoId: null,
+  editandoProdutoId: null,
+  resultadoValidacao: null, // {ok, msg, ingresso}
+  listenersAtivos: {}       // evita religar onSnapshot da mesma coleção
 };
 
 /* ==========================================================
@@ -401,6 +548,30 @@ function hj(){
 }
 function uid(){
   return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+}
+function fmt(v){
+  v = Number(v)||0;
+  return v.toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+}
+function temporadaNome(id){
+  var t = S.temporadas.find(function(x){return x.id===id;});
+  return t ? (t.nome+" — "+t.cidade) : "—";
+}
+function garantirTemporadaFiltro(){
+  if(!S.temporadaFiltro || !S.temporadas.find(function(t){return t.id===S.temporadaFiltro;})){
+    var ativa = S.temporadas.find(function(t){return t.status==="ativa";});
+    S.temporadaFiltro = ativa ? ativa.id : (S.temporadas[0] ? S.temporadas[0].id : "");
+  }
+}
+function seletorTemporada(){
+  if(S.temporadas.length===0) return "";
+  var html = '<div class="subFiltro"><label>Temporada:</label><select id="selTemporadaFiltro">';
+  S.temporadas.forEach(function(t){
+    var sel = (t.id===S.temporadaFiltro) ? " selected" : "";
+    html += '<option value="'+es(t.id)+'"'+sel+'>'+es(t.nome)+' — '+es(t.cidade)+'</option>';
+  });
+  html += '</select></div>';
+  return html;
 }
 
 /* ==========================================================
@@ -432,7 +603,7 @@ function rDashboard(){
   }
   html += '</div></div>';
 
-  html += '<div class="setupNote">Este é o painel da <strong>Fase 1 — Fundamento</strong>. Faturamento, bilheteria, folha e os demais indicadores do dashboard completo chegam nas próximas fases, junto com os módulos que geram esses dados.</div>';
+  html += '<div class="setupNote">Fases entregues: <strong>Fundamento</strong> e <strong>Operação</strong> (sessões, bilheteria, alimentação, estoque). Faturamento, folha, financeiro e os demais indicadores do dashboard completo chegam na Fase 3 — Financeiro.</div>';
 
   return html;
 }
@@ -488,6 +659,203 @@ function rConfig(){
   html += '<div class="panel"><div class="panelHead"><h3>Empresa</h3></div><div class="panelBody">'
     + '<p style="margin:0;color:var(--ink-soft)">Grupo empresarial: <strong>Circo Principal</strong>. Suporte a múltiplos circos (multiempresa) chega numa fase futura.</p>'
     + '</div></div>';
+
+  return html;
+}
+
+function rSessoes(){
+  if(S.temporadas.length===0){
+    return '<h2 class="pageTitle">Sessões</h2><div class="panel"><div class="panelBody"><div class="emptyState">Cadastre uma temporada primeiro em <strong>Temporadas</strong> — sessões pertencem a uma temporada.</div></div></div>';
+  }
+  garantirTemporadaFiltro();
+  var sessoesDaTemporada = S.sessoes.filter(function(s){return s.temporadaId===S.temporadaFiltro;})
+    .sort(function(a,b){ return (a.data+a.hora).localeCompare(b.data+b.hora); });
+
+  var html = '<h2 class="pageTitle">Sessões</h2>';
+  html += seletorTemporada();
+  html += '<div class="panel"><div class="panelHead"><h3>Sessões da temporada</h3><button class="btnSmall" data-abrir-sessao="nova">+ Nova sessão</button></div><div class="panelBody">';
+  if(sessoesDaTemporada.length===0){
+    html += '<div class="emptyState">Nenhuma sessão cadastrada para esta temporada ainda.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Data</th><th>Hora</th><th>Tipo</th><th>Capacidade</th><th>Ingressos vendidos</th></tr></thead><tbody>';
+    sessoesDaTemporada.forEach(function(s){
+      var vendidos = S.ingressos.filter(function(i){return i.sessaoId===s.id && i.status!=="cancelado";}).length;
+      html += '<tr><td>'+fdt(s.data)+'</td><td>'+es(s.hora||"—")+'</td><td>'+es(TIPO_SESSAO_LABEL[s.tipo]||s.tipo)+'</td><td>'+es(s.capacidade||"—")+'</td><td>'+vendidos+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function rBilheteria(){
+  if(S.temporadas.length===0){
+    return '<h2 class="pageTitle">Bilheteria</h2><div class="panel"><div class="panelBody"><div class="emptyState">Cadastre uma temporada primeiro em <strong>Temporadas</strong>.</div></div></div>';
+  }
+  garantirTemporadaFiltro();
+  var tipos = S.tiposIngresso.filter(function(t){return t.temporadaId===S.temporadaFiltro;});
+  var sessoesDaTemporada = S.sessoes.filter(function(s){return s.temporadaId===S.temporadaFiltro;})
+    .sort(function(a,b){ return (a.data+a.hora).localeCompare(b.data+b.hora); });
+  var ingressosDaTemporada = S.ingressos.filter(function(i){return i.temporadaId===S.temporadaFiltro;})
+    .sort(function(a,b){ return (b.criadoEm||"").localeCompare(a.criadoEm||""); });
+
+  var html = '<h2 class="pageTitle">Bilheteria</h2>';
+  html += seletorTemporada();
+
+  // Tipos de ingresso
+  html += '<div class="panel"><div class="panelHead"><h3>Tipos de ingresso</h3><button class="btnSmall" data-abrir-tipo-ingresso="1">+ Novo tipo</button></div><div class="panelBody">';
+  if(tipos.length===0){
+    html += '<div class="emptyState">Nenhum tipo de ingresso cadastrado (ex: Inteira, Meia, VIP) para esta temporada.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Nome</th><th>Preço</th></tr></thead><tbody>';
+    tipos.forEach(function(t){
+      html += '<tr><td>'+es(t.nome)+'</td><td>'+fmt(t.preco)+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  // Vender ingresso
+  html += '<div class="panel"><div class="panelHead"><h3>Vender ingresso</h3></div><div class="panelBody">';
+  if(sessoesDaTemporada.length===0 || tipos.length===0){
+    html += '<div class="emptyState">Cadastre ao menos uma sessão e um tipo de ingresso para começar a vender.</div>';
+  } else {
+    html += '<div class="inlineForm">'
+      + '<div class="field"><label>Sessão</label><select id="fvSessao">'
+        + sessoesDaTemporada.map(function(s){return '<option value="'+es(s.id)+'">'+fdt(s.data)+' '+es(s.hora||"")+' — '+es(TIPO_SESSAO_LABEL[s.tipo]||s.tipo)+'</option>';}).join("")
+      + '</select></div>'
+      + '<div class="field"><label>Tipo</label><select id="fvTipo">'
+        + tipos.map(function(t){return '<option value="'+es(t.id)+'">'+es(t.nome)+' — '+fmt(t.preco)+'</option>';}).join("")
+      + '</select></div>'
+      + '<div class="field small"><label>Qtd</label><input type="number" id="fvQtd" value="1" min="1"></div>'
+      + '<div class="field"><label>Cliente</label><input id="fvCliente" placeholder="Nome (opcional)"></div>'
+      + '<div class="field"><label>Pagamento</label><select id="fvPagamento">'
+        + '<option value="dinheiro">Dinheiro</option><option value="pix">PIX</option><option value="cartao">Cartão</option><option value="cortesia">Cortesia</option>'
+      + '</select></div>'
+      + '<button class="btnSmall" id="btnVenderIngresso">Vender</button>'
+      + '</div>';
+  }
+  html += '</div></div>';
+
+  // Validar ingresso (controle de acesso)
+  html += '<div class="panel"><div class="panelHead"><h3>Validar ingresso na entrada</h3></div><div class="panelBody">';
+  html += '<div class="inlineForm"><div class="field"><label>Código do ingresso</label><input id="fValidarCodigo" placeholder="Cole ou digite o código"></div>'
+    + '<button class="btnSmall" id="btnValidarIngresso">Validar</button></div>';
+  if(S.resultadoValidacao){
+    var r = S.resultadoValidacao;
+    html += '<div class="setupNote" style="margin-top:1rem;background:'+(r.ok?'var(--green-soft)':'var(--accent-soft)')+';color:'+(r.ok?'var(--green)':'var(--accent-ink)')+';border-color:transparent;"><strong>'+es(r.msg)+'</strong></div>';
+  }
+  html += '</div></div>';
+
+  // Últimos ingressos vendidos
+  html += '<div class="panel"><div class="panelHead"><h3>Ingressos vendidos</h3></div><div class="panelBody">';
+  if(ingressosDaTemporada.length===0){
+    html += '<div class="emptyState">Nenhum ingresso vendido ainda nesta temporada.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Código</th><th>Tipo</th><th>Cliente</th><th>Pagamento</th><th>Status</th></tr></thead><tbody>';
+    ingressosDaTemporada.slice(0,30).forEach(function(i){
+      html += '<tr><td><span class="qrCodeBox">'+es(i.qrCode)+'</span></td><td>'+es(i.tipoNome)+'</td><td>'+es(i.clienteNome||"—")+'</td><td>'+es(i.formaPagamento)+'</td><td>'+statusIngressoPill(i.status)+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
+function statusIngressoPill(status){
+  var s = INGRESSO_STATUS[status] || INGRESSO_STATUS.valido;
+  return '<span class="statusPill '+s.cls+'">'+s.txt+'</span>';
+}
+
+function rAlimentacao(){
+  var html = '<h2 class="pageTitle">Alimentação</h2>';
+
+  // PDV
+  html += '<div class="panel"><div class="panelHead"><h3>PDV — nova venda</h3></div><div class="panelBody">';
+  if(S.produtos.length===0){
+    html += '<div class="emptyState">Cadastre produtos abaixo para começar a vender no PDV.</div>';
+  } else {
+    html += '<div class="pdvLayout"><div>';
+    S.produtos.forEach(function(p){
+      html += '<button class="produtoBtn" data-add-carrinho="'+es(p.id)+'">'
+        + '<span><span class="nome">'+es(p.nome)+'</span><br><span class="estq">Estoque: '+es(p.estoqueAtual)+' '+es(p.unidade||"")+'</span></span>'
+        + '<span class="preco">'+fmt(p.preco)+'</span>'
+        + '</button>';
+    });
+    html += '</div><div>';
+    html += '<div class="panel" style="margin-bottom:0;box-shadow:none;"><div class="panelHead"><h3>Carrinho</h3></div><div class="panelBody">';
+    if(S.carrinhoPdv.length===0){
+      html += '<div class="emptyState">Carrinho vazio. Clique num produto ao lado.</div>';
+    } else {
+      var total = 0;
+      S.carrinhoPdv.forEach(function(item){
+        total += item.precoUnit*item.qtd;
+        html += '<div class="carrinhoItem"><span>'+es(item.nome)+'</span>'
+          + '<span class="qtdCtrl"><button data-carrinho-menos="'+es(item.produtoId)+'">−</button>'
+          + item.qtd
+          + '<button data-carrinho-mais="'+es(item.produtoId)+'">+</button></span>'
+          + '<span>'+fmt(item.precoUnit*item.qtd)+'</span></div>';
+      });
+      html += '<div class="carrinhoTotal"><span>Total</span><span>'+fmt(total)+'</span></div>';
+      html += '<div class="field" style="margin-top:1rem;"><label>Forma de pagamento</label><select id="fPdvPagamento">'
+        + '<option value="dinheiro">Dinheiro</option><option value="pix">PIX</option><option value="cartao">Cartão</option>'
+        + '</select></div>';
+      html += '<button class="btnSmall" style="width:100%;margin-top:.6rem;" id="btnFinalizarVenda">Finalizar venda</button>';
+    }
+    html += '</div></div></div></div>';
+  }
+  html += '</div></div>';
+
+  // Produtos
+  html += '<div class="panel"><div class="panelHead"><h3>Produtos cadastrados</h3><button class="btnSmall" data-abrir-produto="novo">+ Novo produto</button></div><div class="panelBody">';
+  if(S.produtos.length===0){
+    html += '<div class="emptyState">Nenhum produto cadastrado ainda (ex: pipoca, refrigerante, cachorro-quente).</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Produto</th><th>Custo</th><th>Preço</th><th>Estoque</th><th></th></tr></thead><tbody>';
+    S.produtos.forEach(function(p){
+      var baixo = p.estoqueAtual <= (p.estoqueMinimo||0);
+      html += '<tr><td>'+es(p.nome)+'</td><td>'+fmt(p.custo)+'</td><td>'+fmt(p.preco)+'</td>'
+        + '<td class="'+(baixo?'estoqueBaixo':'')+'">'+es(p.estoqueAtual)+' '+es(p.unidade||"")+(baixo?' ⚠️':'')+'</td>'
+        + '<td><button class="btnSmall ghost" data-abrir-produto="'+es(p.id)+'">Editar</button></td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
+function rEstoque(){
+  var html = '<h2 class="pageTitle">Estoque</h2>';
+
+  html += '<div class="panel"><div class="panelHead"><h3>Situação atual</h3><button class="btnSmall" data-abrir-movimento="1">+ Registrar movimento</button></div><div class="panelBody">';
+  if(S.produtos.length===0){
+    html += '<div class="emptyState">Cadastre produtos em <strong>Alimentação</strong> para controlar o estoque deles.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Produto</th><th>Estoque atual</th><th>Mínimo</th><th>Situação</th></tr></thead><tbody>';
+    S.produtos.forEach(function(p){
+      var baixo = p.estoqueAtual <= (p.estoqueMinimo||0);
+      html += '<tr><td>'+es(p.nome)+'</td><td>'+es(p.estoqueAtual)+' '+es(p.unidade||"")+'</td><td>'+es(p.estoqueMinimo||0)+'</td>'
+        + '<td>'+(baixo?'<span class="statusPill red">Estoque crítico</span>':'<span class="statusPill green">Normal</span>')+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  html += '<div class="panel"><div class="panelHead"><h3>Movimentações recentes</h3></div><div class="panelBody">';
+  var recentes = S.movimentosEstoque.slice().sort(function(a,b){return (b.data||"").localeCompare(a.data||"");}).slice(0,30);
+  if(recentes.length===0){
+    html += '<div class="emptyState">Nenhuma movimentação registrada ainda.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Produto</th><th>Tipo</th><th>Quantidade</th><th>Motivo</th></tr></thead><tbody>';
+    recentes.forEach(function(m){
+      var prod = S.produtos.find(function(p){return p.id===m.produtoId;});
+      html += '<tr><td>'+es(prod?prod.nome:"—")+'</td><td>'+es(MOVIMENTO_LABEL[m.tipo]||m.tipo)+'</td><td>'+es(m.quantidade)+'</td><td>'+es(m.motivo||"—")+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
 
   return html;
 }
@@ -618,6 +986,217 @@ function salvarUsuarioPapel(){
   });
 }
 
+/* ---------- Sessões ---------- */
+function abrirModalSessao(id){
+  S.editandoSessaoId = (id==="nova") ? null : id;
+  var s = S.editandoSessaoId ? S.sessoes.find(function(x){return x.id===S.editandoSessaoId;}) : null;
+  document.getElementById("modalSessaoTitulo").textContent = s ? "Editar sessão" : "Nova sessão";
+  document.getElementById("fsData").value = s ? s.data : "";
+  document.getElementById("fsHora").value = s ? s.hora : "";
+  document.getElementById("fsCapacidade").value = s ? s.capacidade : "";
+  document.getElementById("fsTipo").value = s ? s.tipo : "normal";
+  document.getElementById("modalSessao").classList.add("show");
+}
+function fecharModalSessao(){ document.getElementById("modalSessao").classList.remove("show"); }
+function salvarSessao(){
+  if(!S.temporadaFiltro){ alert("Selecione uma temporada."); return; }
+  var data = document.getElementById("fsData").value;
+  if(!data){ alert("Informe a data da sessão."); return; }
+  var dados = {
+    temporadaId: S.temporadaFiltro,
+    data: data,
+    hora: document.getElementById("fsHora").value,
+    capacidade: Number(document.getElementById("fsCapacidade").value)||0,
+    tipo: document.getElementById("fsTipo").value
+  };
+  var ref = S.editandoSessaoId ? db.collection("sessoes").doc(S.editandoSessaoId) : db.collection("sessoes").doc();
+  ref.set(dados, {merge:true}).then(fecharModalSessao).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+
+/* ---------- Tipos de ingresso ---------- */
+function abrirModalTipoIngresso(){
+  document.getElementById("ftiNome").value = "";
+  document.getElementById("ftiPreco").value = "";
+  document.getElementById("modalTipoIngresso").classList.add("show");
+}
+function fecharModalTipoIngresso(){ document.getElementById("modalTipoIngresso").classList.remove("show"); }
+function salvarTipoIngresso(){
+  if(!S.temporadaFiltro){ alert("Selecione uma temporada."); return; }
+  var nome = document.getElementById("ftiNome").value.trim();
+  var preco = Number(document.getElementById("ftiPreco").value);
+  if(!nome || isNaN(preco)){ alert("Preencha nome e preço."); return; }
+  db.collection("tiposIngresso").doc().set({
+    temporadaId: S.temporadaFiltro, nome: nome, preco: preco
+  }).then(fecharModalTipoIngresso).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+
+/* ---------- Vender / validar ingresso ---------- */
+function venderIngresso(){
+  var sessaoId = document.getElementById("fvSessao").value;
+  var tipoId = document.getElementById("fvTipo").value;
+  var qtd = Number(document.getElementById("fvQtd").value)||1;
+  var clienteNome = document.getElementById("fvCliente").value.trim();
+  var formaPagamento = document.getElementById("fvPagamento").value;
+  var tipo = S.tiposIngresso.find(function(t){return t.id===tipoId;});
+  if(!sessaoId || !tipo){ alert("Selecione sessão e tipo de ingresso."); return; }
+
+  var lote = db.batch();
+  for(var i=0;i<qtd;i++){
+    var ref = db.collection("ingressos").doc();
+    lote.set(ref, {
+      sessaoId: sessaoId,
+      temporadaId: S.temporadaFiltro,
+      tipoId: tipoId,
+      tipoNome: tipo.nome,
+      precoUnit: tipo.preco,
+      clienteNome: clienteNome,
+      formaPagamento: formaPagamento,
+      canal: "presencial",
+      qrCode: "CC-"+uid().toUpperCase(),
+      status: "valido",
+      criadoEm: new Date().toISOString(),
+      vendidoPor: S.usuarioAtual.uid
+    });
+  }
+  lote.commit().then(function(){
+    document.getElementById("fvCliente").value = "";
+  }).catch(function(err){ alert("Erro ao vender ingresso: "+err.message); });
+}
+
+function validarIngresso(){
+  var codigo = document.getElementById("fValidarCodigo").value.trim();
+  if(!codigo){ return; }
+  var ingresso = S.ingressos.find(function(i){return i.qrCode===codigo;});
+  if(!ingresso){
+    S.resultadoValidacao = {ok:false, msg:"❌ Ingresso não encontrado."};
+    rT();
+    return;
+  }
+  if(ingresso.status==="usado"){
+    S.resultadoValidacao = {ok:false, msg:"⚠️ Este ingresso já foi utilizado."};
+    rT();
+    return;
+  }
+  if(ingresso.status==="cancelado"){
+    S.resultadoValidacao = {ok:false, msg:"❌ Este ingresso foi cancelado."};
+    rT();
+    return;
+  }
+  db.collection("ingressos").doc(ingresso.id).update({
+    status:"usado", usadoEm: new Date().toISOString(), validadoPor: S.usuarioAtual.uid
+  }).then(function(){
+    S.resultadoValidacao = {ok:true, msg:"✅ Ingresso válido — "+(ingresso.tipoNome)+". Liberar entrada."};
+    document.getElementById("fValidarCodigo").value = "";
+    rT();
+  }).catch(function(err){ alert("Erro ao validar: "+err.message); });
+}
+
+/* ---------- Produtos (Alimentação) ---------- */
+function abrirModalProduto(id){
+  S.editandoProdutoId = (id==="novo") ? null : id;
+  var p = S.editandoProdutoId ? S.produtos.find(function(x){return x.id===S.editandoProdutoId;}) : null;
+  document.getElementById("modalProdutoTitulo").textContent = p ? "Editar produto" : "Novo produto";
+  document.getElementById("fpNome").value = p ? p.nome : "";
+  document.getElementById("fpUnidade").value = p ? p.unidade : "";
+  document.getElementById("fpCusto").value = p ? p.custo : "";
+  document.getElementById("fpPreco").value = p ? p.preco : "";
+  document.getElementById("fpEstoqueAtual").value = p ? p.estoqueAtual : 0;
+  document.getElementById("fpEstoqueMinimo").value = p ? p.estoqueMinimo : 0;
+  document.getElementById("modalProduto").classList.add("show");
+}
+function fecharModalProduto(){ document.getElementById("modalProduto").classList.remove("show"); }
+function salvarProduto(){
+  var nome = document.getElementById("fpNome").value.trim();
+  if(!nome){ alert("Informe o nome do produto."); return; }
+  var dados = {
+    nome: nome,
+    unidade: document.getElementById("fpUnidade").value.trim(),
+    custo: Number(document.getElementById("fpCusto").value)||0,
+    preco: Number(document.getElementById("fpPreco").value)||0,
+    estoqueAtual: Number(document.getElementById("fpEstoqueAtual").value)||0,
+    estoqueMinimo: Number(document.getElementById("fpEstoqueMinimo").value)||0,
+    empresaId: EMPRESA_ID
+  };
+  var ref = S.editandoProdutoId ? db.collection("produtosAlimentacao").doc(S.editandoProdutoId) : db.collection("produtosAlimentacao").doc();
+  ref.set(dados, {merge:true}).then(fecharModalProduto).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+
+/* ---------- PDV / Carrinho ---------- */
+function adicionarAoCarrinho(produtoId){
+  var p = S.produtos.find(function(x){return x.id===produtoId;});
+  if(!p) return;
+  var item = S.carrinhoPdv.find(function(x){return x.produtoId===produtoId;});
+  if(item){ item.qtd++; }
+  else { S.carrinhoPdv.push({produtoId:produtoId, nome:p.nome, precoUnit:p.preco, qtd:1}); }
+  rT();
+}
+function alterarQtdCarrinho(produtoId, delta){
+  var item = S.carrinhoPdv.find(function(x){return x.produtoId===produtoId;});
+  if(!item) return;
+  item.qtd += delta;
+  if(item.qtd<=0){ S.carrinhoPdv = S.carrinhoPdv.filter(function(x){return x.produtoId!==produtoId;}); }
+  rT();
+}
+function finalizarVendaPdv(){
+  if(S.carrinhoPdv.length===0) return;
+  var formaPagamento = document.getElementById("fPdvPagamento").value;
+  var total = S.carrinhoPdv.reduce(function(acc,i){return acc+i.precoUnit*i.qtd;},0);
+
+  var lote = db.batch();
+  var vendaRef = db.collection("vendasPdv").doc();
+  lote.set(vendaRef, {
+    itens: S.carrinhoPdv,
+    total: total,
+    formaPagamento: formaPagamento,
+    operador: S.usuarioAtual.uid,
+    horario: new Date().toISOString(),
+    temporadaId: S.temporadaFiltro || null
+  });
+  S.carrinhoPdv.forEach(function(item){
+    var prod = S.produtos.find(function(p){return p.id===item.produtoId;});
+    if(prod){
+      lote.update(db.collection("produtosAlimentacao").doc(item.produtoId), {estoqueAtual: Math.max(0, prod.estoqueAtual-item.qtd)});
+      lote.set(db.collection("estoqueMovimentos").doc(), {
+        produtoId: item.produtoId, tipo:"saida", quantidade:item.qtd, motivo:"Venda PDV", data:new Date().toISOString()
+      });
+    }
+  });
+  lote.commit().then(function(){
+    S.carrinhoPdv = [];
+    rT();
+  }).catch(function(err){ alert("Erro ao finalizar venda: "+err.message); });
+}
+
+/* ---------- Estoque ---------- */
+function abrirModalMovimento(){
+  var sel = document.getElementById("fmProduto");
+  sel.innerHTML = S.produtos.map(function(p){return '<option value="'+es(p.id)+'">'+es(p.nome)+'</option>';}).join("");
+  document.getElementById("fmTipo").value = "entrada";
+  document.getElementById("fmQuantidade").value = "";
+  document.getElementById("fmMotivo").value = "";
+  document.getElementById("modalMovimento").classList.add("show");
+}
+function fecharModalMovimento(){ document.getElementById("modalMovimento").classList.remove("show"); }
+function salvarMovimento(){
+  var produtoId = document.getElementById("fmProduto").value;
+  var tipo = document.getElementById("fmTipo").value;
+  var quantidade = Number(document.getElementById("fmQuantidade").value);
+  var motivo = document.getElementById("fmMotivo").value.trim();
+  var prod = S.produtos.find(function(p){return p.id===produtoId;});
+  if(!prod || !quantidade || quantidade<=0){ alert("Selecione o produto e informe uma quantidade válida."); return; }
+
+  var novoEstoque = prod.estoqueAtual;
+  if(tipo==="entrada"){ novoEstoque += quantidade; }
+  else { novoEstoque = Math.max(0, novoEstoque-quantidade); }
+
+  var lote = db.batch();
+  lote.update(db.collection("produtosAlimentacao").doc(produtoId), {estoqueAtual: novoEstoque});
+  lote.set(db.collection("estoqueMovimentos").doc(), {
+    produtoId: produtoId, tipo: tipo, quantidade: quantidade, motivo: motivo, data: new Date().toISOString()
+  });
+  lote.commit().then(fecharModalMovimento).catch(function(err){ alert("Erro ao registrar: "+err.message); });
+}
+
 /* ==========================================================
    CAMADA 8 — LISTENER DE CLIQUE ÚNICO (DELEGAÇÃO)
    ========================================================== */
@@ -650,6 +1229,37 @@ document.addEventListener("click", function(e){
     atualizarTelaLogin();
     return;
   }
+
+  if((el = e.target.closest("[data-abrir-sessao]"))){ abrirModalSessao(el.dataset.abrirSessao); return; }
+  if(e.target.id === "btnCancelarSessao"){ fecharModalSessao(); return; }
+  if(e.target.id === "btnSalvarSessao"){ salvarSessao(); return; }
+
+  if((el = e.target.closest("[data-abrir-tipo-ingresso]"))){ abrirModalTipoIngresso(); return; }
+  if(e.target.id === "btnCancelarTipoIngresso"){ fecharModalTipoIngresso(); return; }
+  if(e.target.id === "btnSalvarTipoIngresso"){ salvarTipoIngresso(); return; }
+  if(e.target.id === "btnVenderIngresso"){ venderIngresso(); return; }
+  if(e.target.id === "btnValidarIngresso"){ validarIngresso(); return; }
+
+  if((el = e.target.closest("[data-abrir-produto]"))){ abrirModalProduto(el.dataset.abrirProduto); return; }
+  if(e.target.id === "btnCancelarProduto"){ fecharModalProduto(); return; }
+  if(e.target.id === "btnSalvarProduto"){ salvarProduto(); return; }
+
+  if((el = e.target.closest("[data-add-carrinho]"))){ adicionarAoCarrinho(el.dataset.addCarrinho); return; }
+  if((el = e.target.closest("[data-carrinho-mais]"))){ alterarQtdCarrinho(el.dataset.carrinhoMais, 1); return; }
+  if((el = e.target.closest("[data-carrinho-menos]"))){ alterarQtdCarrinho(el.dataset.carrinhoMenos, -1); return; }
+  if(e.target.id === "btnFinalizarVenda"){ finalizarVendaPdv(); return; }
+
+  if((el = e.target.closest("[data-abrir-movimento]"))){ abrirModalMovimento(); return; }
+  if(e.target.id === "btnCancelarMovimento"){ fecharModalMovimento(); return; }
+  if(e.target.id === "btnSalvarMovimento"){ salvarMovimento(); return; }
+});
+
+document.addEventListener("change", function(e){
+  if(e.target.id === "selTemporadaFiltro"){
+    S.temporadaFiltro = e.target.value;
+    S.resultadoValidacao = null;
+    rT();
+  }
 });
 
 /* ==========================================================
@@ -669,12 +1279,40 @@ function montarMenu(){
 
 function rT(){
   montarMenu();
+  ativarListenerSobDemanda(S.tab);
   var html = "";
   if(S.tab === "dashboard") html = rDashboard();
   else if(S.tab === "temporadas") html = rTemporadas();
+  else if(S.tab === "sessoes") html = rSessoes();
+  else if(S.tab === "bilheteria") html = rBilheteria();
+  else if(S.tab === "alimentacao") html = rAlimentacao();
+  else if(S.tab === "estoque") html = rEstoque();
   else if(S.tab === "config") html = rConfig();
   else html = rDashboard();
   document.getElementById("mainArea").innerHTML = html;
+}
+
+// Lazy-loading: só liga o listener de uma coleção quando a aba que precisa dela é aberta.
+function ativarListenerSobDemanda(tab){
+  function ligar(nomeColecao, campoEstado, where){
+    if(S.listenersAtivos[nomeColecao]) return;
+    S.listenersAtivos[nomeColecao] = true;
+    var ref = where ? db.collection(nomeColecao).where(where[0], where[1], where[2]) : db.collection(nomeColecao);
+    ref.onSnapshot(function(snap){
+      S[campoEstado] = [];
+      snap.forEach(function(doc){ S[campoEstado].push(Object.assign({id:doc.id}, doc.data())); });
+      rT();
+    });
+  }
+  if(tab==="sessoes" || tab==="bilheteria"){
+    ligar("sessoes","sessoes");
+    ligar("tiposIngresso","tiposIngresso");
+    ligar("ingressos","ingressos");
+  }
+  if(tab==="alimentacao" || tab==="estoque"){
+    ligar("produtosAlimentacao","produtos",["empresaId","==",EMPRESA_ID]);
+    ligar("estoqueMovimentos","movimentosEstoque");
+  }
 }
 
 /* ==========================================================
