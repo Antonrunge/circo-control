@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Circo Control</title>
+<style>
+  :root{
+    --bg:#f4f1ea;
+    --paper:#ffffff;
+    --ink:#211a14;
+    --ink-soft:#5b4d3f;
+    --ink-faint:#948572;
+    --rule:#e3d9c8;
+    --accent:#a3241f;
+    --accent-soft:#f1e0d8;
+    --accent-ink:#7c1a16;
+    --green:#3a7d44;
+    --green-soft:#e5f0e4;
+    --yellow:#a67c1e;
+    --yellow-soft:#f7edd6;
+    --shadow:0 1px 2px rgba(33,26,20,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    font-size:15px;
+  }
+  input,select,button{font-family:inherit;font-size:inherit;}
+
+  /* ---------- Login ---------- */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:1.5rem;
+  }
+  .loginBox{
+    background:var(--paper);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    padding:2.5rem 2rem;
+    width:100%;
+    max-width:360px;
+    text-align:center;
+  }
+  .loginBox h1{
+    font-size:1.5rem;
+    margin:0 0 .2rem;
+    letter-spacing:-.01em;
+  }
+  .loginBox .tag{
+    color:var(--accent);
+    font-size:.8rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:1.8rem;
+    display:block;
+  }
+  .field{text-align:left;margin-bottom:1rem;}
+  .field label{display:block;font-size:.82rem;color:var(--ink-soft);margin-bottom:.3rem;}
+  .field input{
+    width:100%;
+    padding:.65rem .8rem;
+    border:1px solid var(--rule);
+    border-radius:6px;
+    background:var(--bg);
+  }
+  .btn{
+    display:inline-block;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:.7rem 1.2rem;
+    cursor:pointer;
+    font-weight:600;
+    width:100%;
+  }
+  .btn:hover{background:var(--accent-ink);}
+  .btn.secondary{background:transparent;color:var(--ink-soft);border:1px solid var(--rule);}
+  #loginErro{color:var(--accent);font-size:.85rem;margin-top:.8rem;min-height:1.2em;}
+  .switchMode{margin-top:1rem;font-size:.85rem;color:var(--ink-faint);}
+  .switchMode a{color:var(--accent);cursor:pointer;text-decoration:underline;}
+
+  /* ---------- App shell ---------- */
+  #app{display:none;min-height:100vh;}
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--paper);
+    border-bottom:1px solid var(--rule);
+    padding:.8rem 1.2rem;
+    position:sticky;top:0;z-index:10;
+  }
+  .brand{font-weight:700;font-size:1.05rem;}
+  .brand span{color:var(--accent);}
+  .userInfo{display:flex;align-items:center;gap:.8rem;font-size:.85rem;color:var(--ink-soft);}
+  .userInfo button{
+    background:none;border:1px solid var(--rule);border-radius:6px;
+    padding:.35rem .7rem;cursor:pointer;color:var(--ink-soft);
+  }
+  .layout{display:flex;max-width:1200px;margin:0 auto;}
+  nav.side{
+    width:190px;
+    flex-shrink:0;
+    padding:1.2rem .8rem;
+    border-right:1px solid var(--rule);
+  }
+  nav.side a{
+    display:block;
+    padding:.55rem .7rem;
+    border-radius:6px;
+    color:var(--ink-soft);
+    text-decoration:none;
+    font-size:.9rem;
+    margin-bottom:.15rem;
+    cursor:pointer;
+  }
+  nav.side a:hover{background:var(--bg);}
+  nav.side a.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600;}
+  main{flex:1;padding:1.5rem;min-width:0;}
+
+  h2.pageTitle{margin:0 0 1.2rem;font-size:1.3rem;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;}
+  .card{
+    background:var(--paper);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:1.1rem 1.2rem;
+    box-shadow:var(--shadow);
+  }
+  .card .label{font-size:.78rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;}
+  .card .value{font-size:1.5rem;font-weight:700;}
+  .card .sub{font-size:.8rem;color:var(--ink-faint);margin-top:.2rem;}
+
+  .statusPill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .7rem;border-radius:999px;font-size:.82rem;font-weight:600;}
+  .statusPill.green{background:var(--green-soft);color:var(--green);}
+  .statusPill.yellow{background:var(--yellow-soft);color:var(--yellow);}
+  .statusPill.red{background:var(--accent-soft);color:var(--accent-ink);}
+  .statusPill.gray{background:#eee;color:#777;}
+
+  .panel{
+    background:var(--paper);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    margin-bottom:1.5rem;
+    overflow:hidden;
+  }
+  .panel .panelHead{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:1rem 1.2rem;border-bottom:1px solid var(--rule);
+  }
+  .panel .panelHead h3{margin:0;font-size:1rem;}
+  .panel .panelBody{padding:1.2rem;}
+
+  table.list{width:100%;border-collapse:collapse;font-size:.88rem;}
+  table.list th{
+    text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--rule);
+    color:var(--ink-faint);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;
+  }
+  table.list td{padding:.6rem .6rem;border-bottom:1px solid var(--rule);}
+  table.list tr:last-child td{border-bottom:none;}
+  table.list tr:hover td{background:var(--bg);}
+  .emptyState{color:var(--ink-faint);text-align:center;padding:2rem 1rem;font-size:.9rem;}
+
+  .btnSmall{
+    background:var(--accent);color:#fff;border:none;border-radius:6px;
+    padding:.5rem .9rem;cursor:pointer;font-size:.85rem;font-weight:600;
+  }
+  .btnSmall.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent-soft);}
+
+  /* ---------- Modal ---------- */
+  .modalOverlay{
+    display:none;position:fixed;inset:0;background:rgba(33,26,20,.45);
+    align-items:center;justify-content:center;z-index:50;padding:1rem;
+  }
+  .modalOverlay.show{display:flex;}
+  .modalBox{
+    background:var(--paper);border-radius:10px;max-width:420px;width:100%;
+    padding:1.6rem;box-shadow:0 8px 30px rgba(0,0,0,.2);
+  }
+  .modalBox h3{margin:0 0 1.1rem;}
+  .modalBox .field{margin-bottom:.9rem;}
+  .modalBox select{
+    width:100%;padding:.6rem .7rem;border:1px solid var(--rule);border-radius:6px;background:var(--bg);
+  }
+  .modalActions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.2rem;}
+
+  .setupNote{
+    background:var(--yellow-soft);color:#5c4514;border:1px solid #e9d9a8;
+    border-radius:8px;padding:.9rem 1.1rem;font-size:.85rem;margin-bottom:1.2rem;
+  }
+
+  @media(max-width:760px){
+    .layout{flex-direction:column;}
+    nav.side{width:100%;border-right:none;border-bottom:1px solid var(--rule);
+      display:flex;overflow-x:auto;padding:.6rem;gap:.3rem;}
+    nav.side a{white-space:nowrap;margin-bottom:0;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="loginBox">
+    <span class="tag">🎪 Circo Control</span>
+    <h1 id="loginTitle">Entrar</h1>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="loginEmail" placeholder="seuemail@exemplo.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="loginSenha" placeholder="••••••••">
+    </div>
+    <div class="field" id="camposCadastro" style="display:none">
+      <label>Nome completo</label>
+      <input type="text" id="loginNome" placeholder="Seu nome">
+    </div>
+    <button class="btn" id="btnLoginSubmit">Entrar</button>
+    <div id="loginErro"></div>
+    <div class="switchMode" id="switchModeWrap">
+      Primeiro acesso? <a id="switchModeLink">Criar conta de administrador</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <div class="topbar">
+    <div class="brand">🎪 Circo <span>Control</span></div>
+    <div class="userInfo">
+      <span id="userNomeDisplay"></span>
+      <button id="btnLogout">Sair</button>
+    </div>
+  </div>
+  <div class="layout">
+    <nav class="side" id="navMenu"></nav>
+    <main id="mainArea"></main>
+  </div>
+</div>
+
+<!-- ============ MODAL: NOVA TEMPORADA ============ -->
+<div class="modalOverlay" id="modalTemporada">
+  <div class="modalBox">
+    <h3 id="modalTemporadaTitulo">Nova temporada</h3>
+    <div class="field"><label>Nome da temporada</label><input id="ftNome" placeholder="Ex: Temporada 001"></div>
+    <div class="field"><label>Cidade</label><input id="ftCidade" placeholder="Ex: Jacareí"></div>
+    <div class="field"><label>Estado</label><input id="ftEstado" placeholder="Ex: SP" maxlength="2"></div>
+    <div class="field"><label>Endereço / local</label><input id="ftEndereco" placeholder="Endereço do terreno"></div>
+    <div class="field"><label>Data de chegada</label><input type="date" id="ftChegada"></div>
+    <div class="field"><label>Estreia</label><input type="date" id="ftEstreia"></div>
+    <div class="field"><label>Encerramento</label><input type="date" id="ftEncerramento"></div>
+    <div class="field">
+      <label>Status</label>
+      <select id="ftStatus">
+        <option value="planejada">Planejada</option>
+        <option value="montagem">Em montagem</option>
+        <option value="ativa">Ativa</option>
+        <option value="encerrada">Encerrada</option>
+      </select>
+    </div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarTemporada">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarTemporada">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: NOVO USUÁRIO ============ -->
+<div class="modalOverlay" id="modalUsuario">
+  <div class="modalBox">
+    <h3>Convidar usuário</h3>
+    <div class="setupNote">
+      O usuário precisa primeiro criar a própria conta (e-mail/senha) na tela de login. Depois, cadastre aqui o papel dele para liberar o acesso correto.
+    </div>
+    <div class="field"><label>E-mail do usuário</label><input id="fuEmail" placeholder="email@exemplo.com"></div>
+    <div class="field"><label>Nome</label><input id="fuNome" placeholder="Nome completo"></div>
+    <div class="field">
+      <label>Papel</label>
+      <select id="fuPapel">
+        <option value="diretor">Diretor / Proprietário</option>
+        <option value="gerente">Gerente Geral</option>
+        <option value="financeiro">Financeiro</option>
+        <option value="rh">RH</option>
+        <option value="bilheteria">Bilheteria</option>
+        <option value="caixa">Caixa / Alimentação</option>
+        <option value="estoque">Estoque</option>
+        <option value="marketing">Marketing</option>
+        <option value="auditor">Auditor</option>
+      </select>
+    </div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarUsuario">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarUsuario">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+/* ==========================================================
+   CAMADA 2 — CONFIGURAÇÃO DO FIREBASE
+   Substitua o objeto abaixo pelo firebaseConfig do SEU
+   projeto "circo-control" (Configurações do projeto → Seus
+   aplicativos → ícone </> → copiar o bloco firebaseConfig).
+   ========================================================== */
+var firebaseConfig = {
+  apiKey: "AIzaSyDO5EWJQNQlf6OZGEG4tEBVjryWMr0osFw",
+  authDomain: "circo-control.firebaseapp.com",
+  projectId: "circo-control",
+  storageBucket: "circo-control.firebasestorage.app",
+  messagingSenderId: "591429986832",
+  appId: "1:591429986832:web:42331ac90e7cf8d261f895"
+};
+firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth();
+var db = firebase.firestore();
+
+/* ==========================================================
+   CAMADA 3 — CONSTANTES GLOBAIS
+   ========================================================== */
+var EMPRESA_ID = "circo_principal"; // Fase 1: uma empresa só. Multiempresa vem depois.
+
+var NAV = [
+  {id:"dashboard",  label:"Dashboard"},
+  {id:"temporadas", label:"Temporadas"},
+  {id:"config",     label:"Configurações"}
+];
+
+var ROLE_TABS = {
+  superadmin: ["dashboard","temporadas","config"],
+  diretor:    ["dashboard","temporadas","config"],
+  gerente:    ["dashboard","temporadas"],
+  financeiro: ["dashboard","temporadas"],
+  rh:         ["dashboard"],
+  bilheteria: ["dashboard"],
+  caixa:      ["dashboard"],
+  estoque:    ["dashboard"],
+  marketing:  ["dashboard"],
+  auditor:    ["dashboard","temporadas"]
+};
+
+var PAPEL_LABEL = {
+  superadmin:"Super administrador", diretor:"Diretor / Proprietário", gerente:"Gerente geral",
+  financeiro:"Financeiro", rh:"RH", bilheteria:"Bilheteria", caixa:"Caixa / Alimentação",
+  estoque:"Estoque", marketing:"Marketing", auditor:"Auditor"
+};
+
+var STATUS_LABEL = {
+  planejada:{txt:"Planejada", cls:"gray"},
+  montagem:{txt:"Em montagem", cls:"yellow"},
+  ativa:{txt:"Ativa", cls:"green"},
+  encerrada:{txt:"Encerrada", cls:"gray"}
+};
+
+/* ==========================================================
+   CAMADA 4 — ESTADO GLOBAL ÚNICO
+   ========================================================== */
+var S = {
+  tab: "dashboard",
+  usuarioAtual: null,   // { uid, email, nome, papel }
+  temporadas: [],
+  usuarios: [],
+  editandoTemporadaId: null,
+  modoLogin: "entrar"   // "entrar" | "cadastrar"
+};
+
+/* ==========================================================
+   CAMADA 5 — FUNÇÕES AUXILIARES PURAS
+   ========================================================== */
+function es(str){
+  if(str===undefined||str===null) return "";
+  return String(str).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+function fdt(v){
+  if(!v) return "—";
+  var d = new Date(v+"T00:00:00");
+  if(isNaN(d)) return v;
+  return d.toLocaleDateString("pt-BR");
+}
+function hj(){
+  var d = new Date();
+  return d.toISOString().slice(0,10);
+}
+function uid(){
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+}
+
+/* ==========================================================
+   CAMADA 6 — FUNÇÕES DE RENDERIZAÇÃO rXxx()
+   ========================================================== */
+function rDashboard(){
+  var ativas = S.temporadas.filter(function(t){return t.status==="ativa";});
+  var planejadas = S.temporadas.filter(function(t){return t.status==="planejada"||t.status==="montagem";});
+  var encerradas = S.temporadas.filter(function(t){return t.status==="encerrada";});
+
+  var html = '<h2 class="pageTitle">Visão geral do circo</h2>';
+
+  html += '<div class="grid">';
+  html += cardKpi("Temporadas ativas", ativas.length, ativas.length ? ativas.map(function(t){return t.cidade;}).join(", ") : "Nenhuma temporada ativa");
+  html += cardKpi("Em preparação", planejadas.length, "Planejadas ou em montagem");
+  html += cardKpi("Encerradas", encerradas.length, "Histórico de temporadas");
+  html += cardKpi("Usuários cadastrados", S.usuarios.length, "Com acesso ao sistema");
+  html += '</div>';
+
+  html += '<div class="panel"><div class="panelHead"><h3>Temporadas ativas agora</h3></div><div class="panelBody">';
+  if(ativas.length===0){
+    html += '<div class="emptyState">Nenhuma temporada ativa no momento. Cadastre uma em <strong>Temporadas</strong>.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Temporada</th><th>Cidade</th><th>Estreia</th><th>Encerramento</th><th>Status</th></tr></thead><tbody>';
+    ativas.forEach(function(t){
+      html += '<tr><td>'+es(t.nome)+'</td><td>'+es(t.cidade)+'/'+es(t.estado)+'</td><td>'+fdt(t.estreia)+'</td><td>'+fdt(t.encerramento)+'</td><td>'+statusPill(t.status)+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  html += '<div class="setupNote">Este é o painel da <strong>Fase 1 — Fundamento</strong>. Faturamento, bilheteria, folha e os demais indicadores do dashboard completo chegam nas próximas fases, junto com os módulos que geram esses dados.</div>';
+
+  return html;
+}
+
+function cardKpi(label, value, sub){
+  return '<div class="card"><div class="label">'+es(label)+'</div><div class="value">'+es(value)+'</div><div class="sub">'+es(sub)+'</div></div>';
+}
+
+function statusPill(status){
+  var s = STATUS_LABEL[status] || STATUS_LABEL.planejada;
+  return '<span class="statusPill '+s.cls+'">'+s.txt+'</span>';
+}
+
+function rTemporadas(){
+  var html = '<h2 class="pageTitle">Temporadas</h2>';
+  html += '<div class="panel"><div class="panelHead"><h3>Todas as temporadas</h3><button class="btnSmall" data-abrir-temporada="nova">+ Nova temporada</button></div><div class="panelBody">';
+  if(S.temporadas.length===0){
+    html += '<div class="emptyState">Nenhuma temporada cadastrada ainda. A temporada é a unidade principal da operação — comece cadastrando a primeira.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Nome</th><th>Cidade</th><th>Chegada</th><th>Estreia</th><th>Encerramento</th><th>Status</th><th></th></tr></thead><tbody>';
+    S.temporadas.forEach(function(t){
+      html += '<tr>'
+        +'<td>'+es(t.nome)+'</td>'
+        +'<td>'+es(t.cidade)+(t.estado?'/'+es(t.estado):'')+'</td>'
+        +'<td>'+fdt(t.dataChegada)+'</td>'
+        +'<td>'+fdt(t.estreia)+'</td>'
+        +'<td>'+fdt(t.encerramento)+'</td>'
+        +'<td>'+statusPill(t.status)+'</td>'
+        +'<td><button class="btnSmall ghost" data-abrir-temporada="'+es(t.id)+'">Editar</button></td>'
+        +'</tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function rConfig(){
+  var html = '<h2 class="pageTitle">Configurações</h2>';
+
+  html += '<div class="panel"><div class="panelHead"><h3>Usuários e permissões</h3><button class="btnSmall" data-abrir-usuario="1">+ Convidar usuário</button></div><div class="panelBody">';
+  if(S.usuarios.length===0){
+    html += '<div class="emptyState">Nenhum usuário cadastrado ainda além de você.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th></tr></thead><tbody>';
+    S.usuarios.forEach(function(u){
+      html += '<tr><td>'+es(u.nome)+'</td><td>'+es(u.email)+'</td><td>'+es(PAPEL_LABEL[u.papel]||u.papel)+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  html += '<div class="panel"><div class="panelHead"><h3>Empresa</h3></div><div class="panelBody">'
+    + '<p style="margin:0;color:var(--ink-soft)">Grupo empresarial: <strong>Circo Principal</strong>. Suporte a múltiplos circos (multiempresa) chega numa fase futura.</p>'
+    + '</div></div>';
+
+  return html;
+}
+
+/* ==========================================================
+   CAMADA 7 — FUNÇÕES DE AÇÃO
+   ========================================================== */
+function fazerLogin(){
+  var email = document.getElementById("loginEmail").value.trim();
+  var senha = document.getElementById("loginSenha").value;
+  var erroEl = document.getElementById("loginErro");
+  erroEl.textContent = "";
+
+  if(!email || !senha){
+    erroEl.textContent = "Preencha e-mail e senha.";
+    return;
+  }
+
+  if(S.modoLogin === "cadastrar"){
+    var nome = document.getElementById("loginNome").value.trim();
+    if(!nome){
+      erroEl.textContent = "Informe seu nome.";
+      return;
+    }
+    auth.createUserWithEmailAndPassword(email, senha).then(function(cred){
+      // Primeiro usuário do sistema entra como diretor por padrão.
+      return db.collection("usuarios").doc(cred.user.uid).set({
+        nome: nome, email: email, papel: "diretor", empresaId: EMPRESA_ID, ativo: true
+      });
+    }).catch(function(err){
+      erroEl.textContent = traduzErro(err);
+    });
+  } else {
+    auth.signInWithEmailAndPassword(email, senha).catch(function(err){
+      erroEl.textContent = traduzErro(err);
+    });
+  }
+}
+
+function traduzErro(err){
+  var map = {
+    "auth/invalid-email":"E-mail inválido.",
+    "auth/user-not-found":"Usuário não encontrado.",
+    "auth/wrong-password":"Senha incorreta.",
+    "auth/invalid-credential":"E-mail ou senha incorretos.",
+    "auth/email-already-in-use":"Este e-mail já tem uma conta. Use \"Entrar\".",
+    "auth/weak-password":"A senha precisa ter pelo menos 6 caracteres."
+  };
+  return map[err.code] || ("Erro: " + err.message);
+}
+
+function fazerLogout(){
+  auth.signOut();
+}
+
+function abrirModalTemporada(id){
+  S.editandoTemporadaId = (id==="nova") ? null : id;
+  var t = S.editandoTemporadaId ? S.temporadas.find(function(x){return x.id===S.editandoTemporadaId;}) : null;
+  document.getElementById("modalTemporadaTitulo").textContent = t ? "Editar temporada" : "Nova temporada";
+  document.getElementById("ftNome").value = t ? t.nome : "";
+  document.getElementById("ftCidade").value = t ? t.cidade : "";
+  document.getElementById("ftEstado").value = t ? t.estado : "";
+  document.getElementById("ftEndereco").value = t ? t.endereco : "";
+  document.getElementById("ftChegada").value = t ? t.dataChegada : "";
+  document.getElementById("ftEstreia").value = t ? t.estreia : "";
+  document.getElementById("ftEncerramento").value = t ? t.encerramento : "";
+  document.getElementById("ftStatus").value = t ? t.status : "planejada";
+  document.getElementById("modalTemporada").classList.add("show");
+}
+
+function fecharModalTemporada(){
+  document.getElementById("modalTemporada").classList.remove("show");
+}
+
+function salvarTemporada(){
+  var nome = document.getElementById("ftNome").value.trim();
+  var cidade = document.getElementById("ftCidade").value.trim();
+  if(!nome || !cidade){
+    alert("Preencha ao menos o nome e a cidade da temporada.");
+    return;
+  }
+  var dados = {
+    nome: nome,
+    cidade: cidade,
+    estado: document.getElementById("ftEstado").value.trim().toUpperCase(),
+    endereco: document.getElementById("ftEndereco").value.trim(),
+    dataChegada: document.getElementById("ftChegada").value,
+    estreia: document.getElementById("ftEstreia").value,
+    encerramento: document.getElementById("ftEncerramento").value,
+    status: document.getElementById("ftStatus").value,
+    empresaId: EMPRESA_ID
+  };
+  var ref = S.editandoTemporadaId
+    ? db.collection("temporadas").doc(S.editandoTemporadaId)
+    : db.collection("temporadas").doc();
+  ref.set(dados, {merge:true}).then(function(){
+    fecharModalTemporada();
+  }).catch(function(err){
+    alert("Erro ao salvar: " + err.message);
+  });
+}
+
+function abrirModalUsuario(){
+  document.getElementById("fuEmail").value = "";
+  document.getElementById("fuNome").value = "";
+  document.getElementById("fuPapel").value = "diretor";
+  document.getElementById("modalUsuario").classList.add("show");
+}
+function fecharModalUsuario(){
+  document.getElementById("modalUsuario").classList.remove("show");
+}
+function salvarUsuarioPapel(){
+  var email = document.getElementById("fuEmail").value.trim();
+  var nome = document.getElementById("fuNome").value.trim();
+  var papel = document.getElementById("fuPapel").value;
+  if(!email || !nome){
+    alert("Preencha e-mail e nome.");
+    return;
+  }
+  // Fase 1: pré-cadastra o papel pelo e-mail. Quando esse e-mail criar a conta,
+  // o vínculo por uid é ajustado manualmente aqui em Configurações se necessário.
+  db.collection("usuarios").doc(email.toLowerCase()).set({
+    nome: nome, email: email, papel: papel, empresaId: EMPRESA_ID, ativo: true, preCadastro: true
+  }, {merge:true}).then(function(){
+    fecharModalUsuario();
+  }).catch(function(err){
+    alert("Erro ao salvar: " + err.message);
+  });
+}
+
+/* ==========================================================
+   CAMADA 8 — LISTENER DE CLIQUE ÚNICO (DELEGAÇÃO)
+   ========================================================== */
+document.addEventListener("click", function(e){
+  var el;
+
+  if((el = e.target.closest("[data-nav]"))){
+    S.tab = el.dataset.nav;
+    rT();
+    return;
+  }
+  if((el = e.target.closest("[data-abrir-temporada]"))){
+    abrirModalTemporada(el.dataset.abrirTemporada);
+    return;
+  }
+  if(e.target.id === "btnCancelarTemporada"){ fecharModalTemporada(); return; }
+  if(e.target.id === "btnSalvarTemporada"){ salvarTemporada(); return; }
+
+  if((el = e.target.closest("[data-abrir-usuario]"))){
+    abrirModalUsuario();
+    return;
+  }
+  if(e.target.id === "btnCancelarUsuario"){ fecharModalUsuario(); return; }
+  if(e.target.id === "btnSalvarUsuario"){ salvarUsuarioPapel(); return; }
+
+  if(e.target.id === "btnLoginSubmit"){ fazerLogin(); return; }
+  if(e.target.id === "btnLogout"){ fazerLogout(); return; }
+  if(e.target.id === "switchModeLink"){
+    S.modoLogin = (S.modoLogin === "entrar") ? "cadastrar" : "entrar";
+    atualizarTelaLogin();
+    return;
+  }
+});
+
+/* ==========================================================
+   CAMADA 9 — FUNÇÃO MAESTRO
+   ========================================================== */
+function montarMenu(){
+  var papel = S.usuarioAtual.papel;
+  var abasPermitidas = ROLE_TABS[papel] || ["dashboard"];
+  var html = "";
+  NAV.forEach(function(item){
+    if(abasPermitidas.indexOf(item.id) === -1) return;
+    var activeCls = (S.tab === item.id) ? " active" : "";
+    html += '<a class="'+activeCls.trim()+'" data-nav="'+item.id+'">'+es(item.label)+'</a>';
+  });
+  document.getElementById("navMenu").innerHTML = html;
+}
+
+function rT(){
+  montarMenu();
+  var html = "";
+  if(S.tab === "dashboard") html = rDashboard();
+  else if(S.tab === "temporadas") html = rTemporadas();
+  else if(S.tab === "config") html = rConfig();
+  else html = rDashboard();
+  document.getElementById("mainArea").innerHTML = html;
+}
+
+/* ==========================================================
+   LOGIN / SESSÃO
+   ========================================================== */
+function atualizarTelaLogin(){
+  var cadastrando = S.modoLogin === "cadastrar";
+  document.getElementById("loginTitle").textContent = cadastrando ? "Criar conta" : "Entrar";
+  document.getElementById("camposCadastro").style.display = cadastrando ? "block" : "none";
+  document.getElementById("btnLoginSubmit").textContent = cadastrando ? "Criar conta" : "Entrar";
+  document.getElementById("switchModeWrap").innerHTML = cadastrando
+    ? 'Já tem conta? <a id="switchModeLink">Entrar</a>'
+    : 'Primeiro acesso? <a id="switchModeLink">Criar conta de administrador</a>';
+  document.getElementById("loginErro").textContent = "";
+}
+
+function carregarDadosIniciais(){
+  // Carregamento sob demanda: só o necessário para Dashboard/Temporadas/Config na Fase 1.
+  db.collection("temporadas").where("empresaId","==",EMPRESA_ID).onSnapshot(function(snap){
+    S.temporadas = [];
+    snap.forEach(function(doc){ S.temporadas.push(Object.assign({id:doc.id}, doc.data())); });
+    S.temporadas.sort(function(a,b){ return (a.dataChegada||"").localeCompare(b.dataChegada||""); });
+    rT();
+  });
+
+  db.collection("usuarios").where("empresaId","==",EMPRESA_ID).onSnapshot(function(snap){
+    S.usuarios = [];
+    snap.forEach(function(doc){ S.usuarios.push(Object.assign({id:doc.id}, doc.data())); });
+    rT();
+  });
+}
+
+auth.onAuthStateChanged(function(user){
+  if(user){
+    db.collection("usuarios").doc(user.uid).get().then(function(doc){
+      var dadosUsuario;
+      if(doc.exists){
+        dadosUsuario = doc.data();
+      } else {
+        // Pode ser um usuário pré-cadastrado pelo e-mail em Configurações.
+        return db.collection("usuarios").doc(user.email.toLowerCase()).get().then(function(doc2){
+          if(doc2.exists){
+            var d = doc2.data();
+            return db.collection("usuarios").doc(user.uid).set(d).then(function(){
+              iniciarApp(user, d);
+            });
+          } else {
+            // Sem papel definido ainda: acesso mínimo.
+            var padrao = {nome:user.email, email:user.email, papel:"auditor", empresaId:EMPRESA_ID, ativo:true};
+            return db.collection("usuarios").doc(user.uid).set(padrao).then(function(){
+              iniciarApp(user, padrao);
+            });
+          }
+        });
+      }
+      iniciarApp(user, dadosUsuario);
+    });
+  } else {
+    document.getElementById("app").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+  }
+});
+
+function iniciarApp(user, dadosUsuario){
+  S.usuarioAtual = {
+    uid: user.uid,
+    email: user.email,
+    nome: dadosUsuario.nome || user.email,
+    papel: dadosUsuario.papel || "auditor"
+  };
+  document.getElementById("userNomeDisplay").textContent = S.usuarioAtual.nome + " · " + (PAPEL_LABEL[S.usuarioAtual.papel] || S.usuarioAtual.papel);
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  carregarDadosIniciais();
+  rT();
+}
+
+atualizarTelaLogin();
+</script>
+</body>
+</html>
