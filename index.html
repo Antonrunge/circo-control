@@ -520,7 +520,8 @@ var S = {
   produtos: [],
   movimentosEstoque: [],
   carrinhoPdv: [],          // [{produtoId, nome, precoUnit, qtd}]
-  formaPagamentoPdv: "dinheiro",
+  formVenda: {sessaoId:"", tipoId:"", qtd:1, cliente:"", pagamento:"dinheiro"}, // sobrevive a re-render
+  formPdvPagamento: "dinheiro",
   editandoSessaoId: null,
   editandoProdutoId: null,
   resultadoValidacao: null, // {ok, msg, ingresso}
@@ -677,10 +678,11 @@ function rSessoes(){
   if(sessoesDaTemporada.length===0){
     html += '<div class="emptyState">Nenhuma sessão cadastrada para esta temporada ainda.</div>';
   } else {
-    html += '<table class="list"><thead><tr><th>Data</th><th>Hora</th><th>Tipo</th><th>Capacidade</th><th>Ingressos vendidos</th></tr></thead><tbody>';
+    html += '<table class="list"><thead><tr><th>Data</th><th>Hora</th><th>Tipo</th><th>Capacidade</th><th>Ingressos vendidos</th><th></th></tr></thead><tbody>';
     sessoesDaTemporada.forEach(function(s){
       var vendidos = S.ingressos.filter(function(i){return i.sessaoId===s.id && i.status!=="cancelado";}).length;
-      html += '<tr><td>'+fdt(s.data)+'</td><td>'+es(s.hora||"—")+'</td><td>'+es(TIPO_SESSAO_LABEL[s.tipo]||s.tipo)+'</td><td>'+es(s.capacidade||"—")+'</td><td>'+vendidos+'</td></tr>';
+      html += '<tr><td>'+fdt(s.data)+'</td><td>'+es(s.hora||"—")+'</td><td>'+es(TIPO_SESSAO_LABEL[s.tipo]||s.tipo)+'</td><td>'+es(s.capacidade||"—")+'</td><td>'+vendidos+'</td>'
+        + '<td><button class="btnSmall ghost" data-abrir-sessao="'+es(s.id)+'">Editar</button></td></tr>';
     });
     html += '</tbody></table>';
   }
@@ -720,17 +722,31 @@ function rBilheteria(){
   if(sessoesDaTemporada.length===0 || tipos.length===0){
     html += '<div class="emptyState">Cadastre ao menos uma sessão e um tipo de ingresso para começar a vender.</div>';
   } else {
+    // Garante que a sessão/tipo selecionados continuam válidos para esta temporada.
+    if(!sessoesDaTemporada.find(function(s){return s.id===S.formVenda.sessaoId;})) S.formVenda.sessaoId = sessoesDaTemporada[0].id;
+    if(!tipos.find(function(t){return t.id===S.formVenda.tipoId;})) S.formVenda.tipoId = tipos[0].id;
+
     html += '<div class="inlineForm">'
       + '<div class="field"><label>Sessão</label><select id="fvSessao">'
-        + sessoesDaTemporada.map(function(s){return '<option value="'+es(s.id)+'">'+fdt(s.data)+' '+es(s.hora||"")+' — '+es(TIPO_SESSAO_LABEL[s.tipo]||s.tipo)+'</option>';}).join("")
+        + sessoesDaTemporada.map(function(s){
+            var sel = (s.id===S.formVenda.sessaoId) ? " selected" : "";
+            return '<option value="'+es(s.id)+'"'+sel+'>'+fdt(s.data)+' '+es(s.hora||"")+' — '+es(TIPO_SESSAO_LABEL[s.tipo]||s.tipo)+'</option>';
+          }).join("")
       + '</select></div>'
       + '<div class="field"><label>Tipo</label><select id="fvTipo">'
-        + tipos.map(function(t){return '<option value="'+es(t.id)+'">'+es(t.nome)+' — '+fmt(t.preco)+'</option>';}).join("")
+        + tipos.map(function(t){
+            var sel = (t.id===S.formVenda.tipoId) ? " selected" : "";
+            return '<option value="'+es(t.id)+'"'+sel+'>'+es(t.nome)+' — '+fmt(t.preco)+'</option>';
+          }).join("")
       + '</select></div>'
-      + '<div class="field small"><label>Qtd</label><input type="number" id="fvQtd" value="1" min="1"></div>'
-      + '<div class="field"><label>Cliente</label><input id="fvCliente" placeholder="Nome (opcional)"></div>'
+      + '<div class="field small"><label>Qtd</label><input type="number" id="fvQtd" value="'+es(S.formVenda.qtd)+'" min="1"></div>'
+      + '<div class="field"><label>Cliente</label><input id="fvCliente" value="'+es(S.formVenda.cliente)+'" placeholder="Nome (opcional)"></div>'
       + '<div class="field"><label>Pagamento</label><select id="fvPagamento">'
-        + '<option value="dinheiro">Dinheiro</option><option value="pix">PIX</option><option value="cartao">Cartão</option><option value="cortesia">Cortesia</option>'
+        + ["dinheiro","pix","cartao","cortesia"].map(function(v){
+            var lbl = {dinheiro:"Dinheiro",pix:"PIX",cartao:"Cartão",cortesia:"Cortesia"}[v];
+            var sel = (v===S.formVenda.pagamento) ? " selected" : "";
+            return '<option value="'+v+'"'+sel+'>'+lbl+'</option>';
+          }).join("")
       + '</select></div>'
       + '<button class="btnSmall" id="btnVenderIngresso">Vender</button>'
       + '</div>';
@@ -799,7 +815,11 @@ function rAlimentacao(){
       });
       html += '<div class="carrinhoTotal"><span>Total</span><span>'+fmt(total)+'</span></div>';
       html += '<div class="field" style="margin-top:1rem;"><label>Forma de pagamento</label><select id="fPdvPagamento">'
-        + '<option value="dinheiro">Dinheiro</option><option value="pix">PIX</option><option value="cartao">Cartão</option>'
+        + ["dinheiro","pix","cartao"].map(function(v){
+            var lbl = {dinheiro:"Dinheiro",pix:"PIX",cartao:"Cartão"}[v];
+            var sel = (v===S.formPdvPagamento) ? " selected" : "";
+            return '<option value="'+v+'"'+sel+'>'+lbl+'</option>';
+          }).join("")
         + '</select></div>';
       html += '<button class="btnSmall" style="width:100%;margin-top:.6rem;" id="btnFinalizarVenda">Finalizar venda</button>';
     }
@@ -1032,11 +1052,11 @@ function salvarTipoIngresso(){
 
 /* ---------- Vender / validar ingresso ---------- */
 function venderIngresso(){
-  var sessaoId = document.getElementById("fvSessao").value;
-  var tipoId = document.getElementById("fvTipo").value;
-  var qtd = Number(document.getElementById("fvQtd").value)||1;
-  var clienteNome = document.getElementById("fvCliente").value.trim();
-  var formaPagamento = document.getElementById("fvPagamento").value;
+  var sessaoId = S.formVenda.sessaoId;
+  var tipoId = S.formVenda.tipoId;
+  var qtd = S.formVenda.qtd || 1;
+  var clienteNome = S.formVenda.cliente.trim();
+  var formaPagamento = S.formVenda.pagamento;
   var tipo = S.tiposIngresso.find(function(t){return t.id===tipoId;});
   if(!sessaoId || !tipo){ alert("Selecione sessão e tipo de ingresso."); return; }
 
@@ -1059,7 +1079,8 @@ function venderIngresso(){
     });
   }
   lote.commit().then(function(){
-    document.getElementById("fvCliente").value = "";
+    S.formVenda.cliente = "";
+    rT();
   }).catch(function(err){ alert("Erro ao vender ingresso: "+err.message); });
 }
 
@@ -1139,7 +1160,7 @@ function alterarQtdCarrinho(produtoId, delta){
 }
 function finalizarVendaPdv(){
   if(S.carrinhoPdv.length===0) return;
-  var formaPagamento = document.getElementById("fPdvPagamento").value;
+  var formaPagamento = S.formPdvPagamento;
   var total = S.carrinhoPdv.reduce(function(acc,i){return acc+i.precoUnit*i.qtd;},0);
 
   var lote = db.batch();
@@ -1259,7 +1280,19 @@ document.addEventListener("change", function(e){
     S.temporadaFiltro = e.target.value;
     S.resultadoValidacao = null;
     rT();
+    return;
   }
+  if(e.target.id === "fvSessao"){ S.formVenda.sessaoId = e.target.value; return; }
+  if(e.target.id === "fvTipo"){ S.formVenda.tipoId = e.target.value; return; }
+  if(e.target.id === "fvPagamento"){ S.formVenda.pagamento = e.target.value; return; }
+  if(e.target.id === "fPdvPagamento"){ S.formPdvPagamento = e.target.value; return; }
+});
+
+// Campos de texto/número são gravados a cada tecla, sem esperar "change" (blur),
+// para não perder o valor se um snapshot do Firestore disparar um re-render no meio da digitação.
+document.addEventListener("input", function(e){
+  if(e.target.id === "fvQtd"){ S.formVenda.qtd = Number(e.target.value)||1; return; }
+  if(e.target.id === "fvCliente"){ S.formVenda.cliente = e.target.value; return; }
 });
 
 /* ==========================================================
