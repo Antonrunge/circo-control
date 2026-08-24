@@ -314,7 +314,7 @@
     <button class="btn" id="btnLoginSubmit">Entrar</button>
     <div id="loginErro"></div>
     <div class="switchMode" id="switchModeWrap">
-      Primeiro acesso? <a id="switchModeLink">Criar conta de administrador</a>
+      Ainda não tem senha? <a id="switchModeLink">Criar conta</a>
     </div>
   </div>
 </div>
@@ -948,7 +948,7 @@ function rDashboard(){
   }
   html += '</div></div>';
 
-  html += '<div class="setupNote">Fases entregues: <strong>Fundamento</strong>, <strong>Operação</strong> e <strong>Financeiro</strong> (contas, fluxo de caixa, DRE). Folha de pagamento, marketing, logística e IA chegam nas próximas fases.</div>';
+  html += '<div class="setupNote">Fases entregues: <strong>Fundamento</strong>, <strong>Operação</strong>, <strong>Financeiro</strong>, <strong>Locais &amp; Relatórios</strong> e <strong>Pessoas &amp; Folha</strong>. Marketing, logística e IA chegam nas próximas fases.</div>';
 
   return html;
 }
@@ -1516,9 +1516,22 @@ function fazerLogin(){
       return;
     }
     auth.createUserWithEmailAndPassword(email, senha).then(function(cred){
-      // Primeiro usuário do sistema entra como diretor por padrão.
-      return db.collection("usuarios").doc(cred.user.uid).set({
-        nome: nome, email: email, papel: "diretor", empresaId: EMPRESA_ID, ativo: true
+      var emailKey = email.toLowerCase();
+      // Se um admin já cadastrou o papel dessa pessoa em Configurações (pré-cadastro por
+      // e-mail), usa esse papel. Só vira Diretor automaticamente quem é o PRIMEIRO usuário
+      // do sistema (o cadastro inicial) — qualquer pessoa depois disso entra sem papel de
+      // acesso total até um admin definir o papel dela.
+      return db.collection("usuarios").doc(emailKey).get().then(function(preCadastro){
+        if(preCadastro.exists){
+          var dadosPre = preCadastro.data();
+          return db.collection("usuarios").doc(cred.user.uid).set(Object.assign({}, dadosPre, {nome: dadosPre.nome||nome, ativo:true}));
+        }
+        return db.collection("usuarios").where("empresaId","==",EMPRESA_ID).limit(1).get().then(function(snap){
+          var papel = snap.empty ? "diretor" : "auditor";
+          return db.collection("usuarios").doc(cred.user.uid).set({
+            nome: nome, email: email, papel: papel, empresaId: EMPRESA_ID, ativo: true
+          });
+        });
       });
     }).catch(function(err){
       erroEl.textContent = traduzErro(err);
@@ -2283,7 +2296,7 @@ function atualizarTelaLogin(){
   document.getElementById("btnLoginSubmit").textContent = cadastrando ? "Criar conta" : "Entrar";
   document.getElementById("switchModeWrap").innerHTML = cadastrando
     ? 'Já tem conta? <a id="switchModeLink">Entrar</a>'
-    : 'Primeiro acesso? <a id="switchModeLink">Criar conta de administrador</a>';
+    : 'Ainda não tem senha? <a id="switchModeLink">Criar conta</a>';
   document.getElementById("loginErro").textContent = "";
 }
 
