@@ -296,6 +296,7 @@
   <div class="modalBox">
     <h3 id="modalTemporadaTitulo">Nova temporada</h3>
     <div class="field"><label>Nome da temporada</label><input id="ftNome" placeholder="Ex: Temporada 001"></div>
+    <div class="field"><label>Local cadastrado (opcional)</label><select id="ftLocal"><option value="">Nenhum — preencher cidade manualmente</option></select></div>
     <div class="field"><label>Cidade</label><input id="ftCidade" placeholder="Ex: Jacareí"></div>
     <div class="field"><label>Estado</label><input id="ftEstado" placeholder="Ex: SP" maxlength="2"></div>
     <div class="field"><label>Endereço / local</label><input id="ftEndereco" placeholder="Endereço do terreno"></div>
@@ -314,6 +315,33 @@
     <div class="modalActions">
       <button class="btn secondary" style="width:auto" id="btnCancelarTemporada">Cancelar</button>
       <button class="btnSmall" id="btnSalvarTemporada">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: LOCAL ============ -->
+<div class="modalOverlay" id="modalLocal">
+  <div class="modalBox">
+    <h3 id="modalLocalTitulo">Novo local</h3>
+    <div class="field"><label>Nome do local</label><input id="flNome" placeholder="Ex: Terreno do Parque Municipal"></div>
+    <div class="field"><label>Cidade</label><input id="flCidade" placeholder="Ex: Jacareí"></div>
+    <div class="field"><label>Estado</label><input id="flEstado" placeholder="Ex: SP" maxlength="2"></div>
+    <div class="field"><label>Endereço</label><input id="flEndereco" placeholder="Endereço completo"></div>
+    <div class="field"><label>Nome do contato</label><input id="flContatoNome" placeholder="Quem negocia o espaço"></div>
+    <div class="field"><label>Telefone do contato</label><input id="flContatoTelefone" placeholder="(00) 00000-0000"></div>
+    <div class="field"><label>E-mail do contato</label><input id="flContatoEmail" placeholder="email@exemplo.com"></div>
+    <div class="field">
+      <label>Status</label>
+      <select id="flStatus">
+        <option value="potencial">Local potencial</option>
+        <option value="utilizado">Já utilizado</option>
+        <option value="descartado">Descartado</option>
+      </select>
+    </div>
+    <div class="field"><label>Observações</label><input id="flObservacoes" placeholder="Opcional"></div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarLocal">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarLocal">Salvar</button>
     </div>
   </div>
 </div>
@@ -505,25 +533,27 @@ var EMPRESA_ID = "circo_principal"; // Fase 1: uma empresa só. Multiempresa vem
 var NAV = [
   {id:"dashboard",    label:"Dashboard"},
   {id:"temporadas",   label:"Temporadas"},
+  {id:"locais",       label:"Locais"},
   {id:"sessoes",      label:"Sessões"},
   {id:"bilheteria",   label:"Bilheteria"},
   {id:"alimentacao",  label:"Alimentação"},
   {id:"estoque",      label:"Estoque"},
   {id:"financeiro",   label:"Financeiro"},
+  {id:"relatorios",   label:"Relatórios"},
   {id:"config",       label:"Configurações"}
 ];
 
 var ROLE_TABS = {
-  superadmin: ["dashboard","temporadas","sessoes","bilheteria","alimentacao","estoque","financeiro","config"],
-  diretor:    ["dashboard","temporadas","sessoes","bilheteria","alimentacao","estoque","financeiro","config"],
-  gerente:    ["dashboard","temporadas","sessoes","bilheteria","alimentacao","estoque","financeiro"],
-  financeiro: ["dashboard","temporadas","bilheteria","alimentacao","financeiro"],
+  superadmin: ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","relatorios","config"],
+  diretor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","relatorios","config"],
+  gerente:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","relatorios"],
+  financeiro: ["dashboard","temporadas","bilheteria","alimentacao","financeiro","relatorios"],
   rh:         ["dashboard"],
   bilheteria: ["dashboard","sessoes","bilheteria"],
   caixa:      ["dashboard","alimentacao"],
   estoque:    ["dashboard","estoque","alimentacao"],
-  marketing:  ["dashboard"],
-  auditor:    ["dashboard","temporadas","sessoes","bilheteria","alimentacao","estoque","financeiro"]
+  marketing:  ["dashboard","locais","relatorios"],
+  auditor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","relatorios"]
 };
 
 var TIPO_SESSAO_LABEL = {normal:"Normal", matine:"Matinê", especial:"Especial", estreia:"Estreia"};
@@ -547,6 +577,12 @@ var CONTA_PAGAR_STATUS = {
 var CONTA_RECEBER_STATUS = {
   previsto: {txt:"Previsto", cls:"yellow"},
   recebido: {txt:"Recebido", cls:"green"}
+};
+
+var LOCAL_STATUS = {
+  potencial: {txt:"Local potencial", cls:"yellow"},
+  utilizado: {txt:"Já utilizado", cls:"green"},
+  descartado:{txt:"Descartado", cls:"gray"}
 };
 
 var PAPEL_LABEL = {
@@ -595,7 +631,12 @@ var S = {
   contasReceber: [],
   editandoContaPagarId: null,
   editandoContaReceberId: null,
-  temporadaFiltroFinanceiro: "" // "" = todas as temporadas no DRE/relatórios
+  temporadaFiltroFinanceiro: "", // "" = todas as temporadas no DRE/relatórios
+
+  // Fase 4 — Locais e Relatórios/BI
+  locais: [],
+  editandoLocalId: null,
+  temporadaDetalheRelatorio: "" // temporada selecionada no "puxar menu" de relatórios
 };
 
 /* ==========================================================
@@ -679,6 +720,66 @@ function calcularDespesas(dias){
     if(c.status!=="pago") return false;
     return dias===null ? true : diasAtras(c.pagoEm||c.vencimento) <= dias;
   }).reduce(function(acc,c){return acc+(c.valor||0);},0);
+}
+
+// Resultado financeiro completo de uma temporada — usado em Relatórios, comparação entre
+// temporadas e no ranking de locais. Uma única fonte de verdade para não recalcular diferente em cada tela.
+function temporadaResultado(temporadaId){
+  var ingressosT = S.ingressos.filter(function(i){return i.temporadaId===temporadaId && i.status!=="cancelado";});
+  var vendasT = S.vendasPdv.filter(function(v){return v.temporadaId===temporadaId;});
+  var receberT = S.contasReceber.filter(function(c){return c.temporadaId===temporadaId && c.status==="recebido";});
+  var pagarT = S.contasPagar.filter(function(c){return c.temporadaId===temporadaId && c.status==="pago";});
+  var receitaBilheteria = ingressosT.reduce(function(a,i){return a+(i.precoUnit||0);},0);
+  var receitaAlimentacao = vendasT.reduce(function(a,v){return a+(v.total||0);},0);
+  var receitaOutras = receberT.reduce(function(a,c){return a+(c.valor||0);},0);
+  var receita = receitaBilheteria+receitaAlimentacao+receitaOutras;
+  var despesa = pagarT.reduce(function(a,c){return a+(c.valor||0);},0);
+  return {
+    receita: receita, despesa: despesa, resultado: receita-despesa,
+    receitaBilheteria: receitaBilheteria, receitaAlimentacao: receitaAlimentacao, receitaOutras: receitaOutras,
+    publico: ingressosT.length
+  };
+}
+
+// Ranking dos locais por resultado somado de todas as temporadas já realizadas ali.
+function rankingLocais(limite){
+  var mapa = {};
+  S.temporadas.forEach(function(t){
+    if(t.status!=="encerrada" && t.status!=="ativa") return; // só considera temporadas que já geraram operação
+    var chave = t.localId || ("manual:"+t.cidade+"/"+t.estado);
+    var r = temporadaResultado(t.id);
+    if(!mapa[chave]){
+      var local = t.localId ? S.locais.find(function(l){return l.id===t.localId;}) : null;
+      mapa[chave] = {
+        nome: local ? local.nome : (t.cidade+"/"+t.estado),
+        cidade: t.cidade, estado: t.estado,
+        receita:0, despesa:0, resultado:0, temporadas:0, publico:0
+      };
+    }
+    mapa[chave].receita += r.receita;
+    mapa[chave].despesa += r.despesa;
+    mapa[chave].resultado += r.resultado;
+    mapa[chave].publico += r.publico;
+    mapa[chave].temporadas += 1;
+  });
+  var lista = Object.keys(mapa).map(function(k){return mapa[k];});
+  lista.sort(function(a,b){return b.resultado-a.resultado;});
+  return limite ? lista.slice(0,limite) : lista;
+}
+
+// Produtos da praça de alimentação que mais vendem, somando todas as vendas do PDV.
+function produtosMaisVendidos(limite){
+  var mapa = {};
+  S.vendasPdv.forEach(function(v){
+    (v.itens||[]).forEach(function(item){
+      if(!mapa[item.produtoId]) mapa[item.produtoId] = {nome:item.nome, qtd:0, receita:0};
+      mapa[item.produtoId].qtd += item.qtd;
+      mapa[item.produtoId].receita += item.qtd*item.precoUnit;
+    });
+  });
+  var lista = Object.keys(mapa).map(function(k){return mapa[k];});
+  lista.sort(function(a,b){return b.qtd-a.qtd;});
+  return limite ? lista.slice(0,limite) : lista;
 }
 
 function rDashboard(){
@@ -1104,6 +1205,119 @@ function seletorTemporadaFinanceiro(){
   return html;
 }
 
+function rLocais(){
+  var html = '<h2 class="pageTitle">Locais</h2>';
+  html += '<div class="setupNote">Cadastre aqui todo terreno/local em avaliação ou já usado pelo circo — com o contato de quem negocia o espaço. Isso alimenta o ranking de melhores regiões em Relatórios.</div>';
+  html += '<div class="panel"><div class="panelHead"><h3>Locais cadastrados</h3><button class="btnSmall" data-abrir-local="novo">+ Novo local</button></div><div class="panelBody">';
+  if(S.locais.length===0){
+    html += '<div class="emptyState">Nenhum local cadastrado ainda.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Nome</th><th>Cidade</th><th>Contato</th><th>Status</th><th>Temporadas ali</th><th></th></tr></thead><tbody>';
+    S.locais.slice().sort(function(a,b){return (a.nome||"").localeCompare(b.nome||"");}).forEach(function(l){
+      var s = LOCAL_STATUS[l.status] || LOCAL_STATUS.potencial;
+      var qtdTemporadas = S.temporadas.filter(function(t){return t.localId===l.id;}).length;
+      html += '<tr><td>'+es(l.nome)+'</td><td>'+es(l.cidade)+(l.estado?'/'+es(l.estado):'')+'</td>'
+        + '<td>'+es(l.contatoNome||"—")+(l.contatoTelefone?' · '+es(l.contatoTelefone):'')+'</td>'
+        + '<td><span class="statusPill '+s.cls+'">'+s.txt+'</span></td>'
+        + '<td>'+qtdTemporadas+'</td>'
+        + '<td><button class="btnSmall ghost" data-abrir-local="'+es(l.id)+'">Editar</button></td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function rRelatorios(){
+  var html = '<h2 class="pageTitle">Relatórios</h2>';
+
+  var temporadasComparaveis = S.temporadas.filter(function(t){return t.status==="ativa"||t.status==="encerrada";})
+    .map(function(t){ return Object.assign({}, t, temporadaResultado(t.id)); })
+    .sort(function(a,b){ return (b.dataChegada||"").localeCompare(a.dataChegada||""); });
+
+  // ---- Comparação entre temporadas ----
+  html += '<div class="panel"><div class="panelHead"><h3>Comparação entre temporadas</h3></div><div class="panelBody">';
+  if(temporadasComparaveis.length===0){
+    html += '<div class="emptyState">Ainda não há temporadas ativas ou encerradas para comparar.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Temporada</th><th>Cidade</th><th>Público</th><th>Receita</th><th>Despesa</th><th>Resultado</th><th>Margem</th></tr></thead><tbody>';
+    temporadasComparaveis.forEach(function(t){
+      var margem = t.receita>0 ? (t.resultado/t.receita*100) : 0;
+      var corResultado = t.resultado>=0 ? "green" : "red";
+      html += '<tr><td>'+es(t.nome)+'</td><td>'+es(t.cidade)+'/'+es(t.estado)+'</td><td>'+t.publico+'</td>'
+        + '<td>'+fmt(t.receita)+'</td><td>'+fmt(t.despesa)+'</td>'
+        + '<td><span class="statusPill '+corResultado+'">'+fmt(t.resultado)+'</span></td>'
+        + '<td>'+margem.toFixed(0)+'%</td></tr>';
+    });
+    html += '</tbody></table>';
+    var melhor = temporadasComparaveis.slice().sort(function(a,b){return b.resultado-a.resultado;})[0];
+    var pior = temporadasComparaveis.slice().sort(function(a,b){return a.resultado-b.resultado;})[0];
+    if(temporadasComparaveis.length>1){
+      html += '<div class="setupNote" style="margin-top:1rem;">📈 Melhor resultado: <strong>'+es(melhor.nome)+' ('+es(melhor.cidade)+')</strong> com '+fmt(melhor.resultado)+'. '
+        + '📉 Pior resultado: <strong>'+es(pior.nome)+' ('+es(pior.cidade)+')</strong> com '+fmt(pior.resultado)+'.</div>';
+    }
+  }
+  html += '</div></div>';
+
+  // ---- Top 10 locais/regiões ----
+  var ranking = rankingLocais(10);
+  html += '<div class="panel"><div class="panelHead"><h3>Top locais e regiões</h3></div><div class="panelBody">';
+  if(ranking.length===0){
+    html += '<div class="emptyState">Sem dados suficientes ainda — encerre ou opere ao menos uma temporada com receitas/despesas lançadas.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>#</th><th>Local / região</th><th>Temporadas</th><th>Público total</th><th>Receita total</th><th>Resultado total</th></tr></thead><tbody>';
+    ranking.forEach(function(r, idx){
+      html += '<tr><td>'+(idx+1)+'</td><td>'+es(r.nome)+'</td><td>'+r.temporadas+'</td><td>'+r.publico+'</td><td>'+fmt(r.receita)+'</td>'
+        + '<td><span class="statusPill '+(r.resultado>=0?"green":"red")+'">'+fmt(r.resultado)+'</span></td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  // ---- Produtos mais vendidos ----
+  var produtosTop = produtosMaisVendidos(10);
+  html += '<div class="panel"><div class="panelHead"><h3>Produtos da alimentação mais vendidos</h3></div><div class="panelBody">';
+  if(produtosTop.length===0){
+    html += '<div class="emptyState">Nenhuma venda registrada no PDV ainda.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>#</th><th>Produto</th><th>Quantidade vendida</th><th>Receita gerada</th></tr></thead><tbody>';
+    produtosTop.forEach(function(p, idx){
+      html += '<tr><td>'+(idx+1)+'</td><td>'+es(p.nome)+'</td><td>'+p.qtd+'</td><td>'+fmt(p.receita)+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  // ---- Puxar menu: consultar uma temporada anterior em detalhe ----
+  html += '<div class="panel"><div class="panelHead"><h3>Consultar temporada</h3></div><div class="panelBody">';
+  if(temporadasComparaveis.length===0){
+    html += '<div class="emptyState">Nenhuma temporada disponível para consulta ainda.</div>';
+  } else {
+    if(!S.temporadaDetalheRelatorio) S.temporadaDetalheRelatorio = temporadasComparaveis[0].id;
+    html += '<div class="subFiltro"><label>Temporada:</label><select id="selTemporadaRelatorio">';
+    temporadasComparaveis.forEach(function(t){
+      var sel = (t.id===S.temporadaDetalheRelatorio) ? " selected" : "";
+      html += '<option value="'+es(t.id)+'"'+sel+'>'+es(t.nome)+' — '+es(t.cidade)+' ('+fdt(t.dataChegada)+')</option>';
+    });
+    html += '</select></div>';
+    var d = temporadasComparaveis.find(function(t){return t.id===S.temporadaDetalheRelatorio;}) || temporadasComparaveis[0];
+    html += '<table class="list"><tbody>'
+      + '<tr><td>Cidade</td><td style="text-align:right">'+es(d.cidade)+'/'+es(d.estado)+'</td></tr>'
+      + '<tr><td>Período</td><td style="text-align:right">'+fdt(d.dataChegada)+' a '+fdt(d.encerramento)+'</td></tr>'
+      + '<tr><td>Público (ingressos válidos)</td><td style="text-align:right">'+d.publico+'</td></tr>'
+      + '<tr><td>Receita — Bilheteria</td><td style="text-align:right">'+fmt(d.receitaBilheteria)+'</td></tr>'
+      + '<tr><td>Receita — Alimentação</td><td style="text-align:right">'+fmt(d.receitaAlimentacao)+'</td></tr>'
+      + '<tr><td>Receita — Outras</td><td style="text-align:right">'+fmt(d.receitaOutras)+'</td></tr>'
+      + '<tr><td><strong>Receita total</strong></td><td style="text-align:right"><strong>'+fmt(d.receita)+'</strong></td></tr>'
+      + '<tr><td>Despesas pagas</td><td style="text-align:right">-'+fmt(d.despesa)+'</td></tr>'
+      + '<tr><td><strong>Resultado</strong></td><td style="text-align:right"><strong>'+fmt(d.resultado)+'</strong></td></tr>'
+      + '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
 /* ==========================================================
    CAMADA 7 — FUNÇÕES DE AÇÃO
    ========================================================== */
@@ -1159,6 +1373,10 @@ function abrirModalTemporada(id){
   S.editandoTemporadaId = (id==="nova") ? null : id;
   var t = S.editandoTemporadaId ? S.temporadas.find(function(x){return x.id===S.editandoTemporadaId;}) : null;
   document.getElementById("modalTemporadaTitulo").textContent = t ? "Editar temporada" : "Nova temporada";
+  var selLocal = document.getElementById("ftLocal");
+  selLocal.innerHTML = '<option value="">Nenhum — preencher cidade manualmente</option>'
+    + S.locais.map(function(l){return '<option value="'+es(l.id)+'">'+es(l.nome)+' — '+es(l.cidade)+'</option>';}).join("");
+  selLocal.value = t ? (t.localId||"") : "";
   document.getElementById("ftNome").value = t ? t.nome : "";
   document.getElementById("ftCidade").value = t ? t.cidade : "";
   document.getElementById("ftEstado").value = t ? t.estado : "";
@@ -1183,6 +1401,7 @@ function salvarTemporada(){
   }
   var dados = {
     nome: nome,
+    localId: document.getElementById("ftLocal").value || null,
     cidade: cidade,
     estado: document.getElementById("ftEstado").value.trim().toUpperCase(),
     endereco: document.getElementById("ftEndereco").value.trim(),
@@ -1531,6 +1750,43 @@ function marcarContaReceberRecebida(id){
     .catch(function(err){ alert("Erro: "+err.message); });
 }
 
+/* ---------- Locais ---------- */
+function abrirModalLocal(id){
+  S.editandoLocalId = (id==="novo") ? null : id;
+  var l = S.editandoLocalId ? S.locais.find(function(x){return x.id===S.editandoLocalId;}) : null;
+  document.getElementById("modalLocalTitulo").textContent = l ? "Editar local" : "Novo local";
+  document.getElementById("flNome").value = l ? l.nome : "";
+  document.getElementById("flCidade").value = l ? l.cidade : "";
+  document.getElementById("flEstado").value = l ? l.estado : "";
+  document.getElementById("flEndereco").value = l ? l.endereco : "";
+  document.getElementById("flContatoNome").value = l ? l.contatoNome : "";
+  document.getElementById("flContatoTelefone").value = l ? l.contatoTelefone : "";
+  document.getElementById("flContatoEmail").value = l ? l.contatoEmail : "";
+  document.getElementById("flStatus").value = l ? l.status : "potencial";
+  document.getElementById("flObservacoes").value = l ? l.observacoes : "";
+  document.getElementById("modalLocal").classList.add("show");
+}
+function fecharModalLocal(){ document.getElementById("modalLocal").classList.remove("show"); }
+function salvarLocal(){
+  var nome = document.getElementById("flNome").value.trim();
+  var cidade = document.getElementById("flCidade").value.trim();
+  if(!nome || !cidade){ alert("Preencha ao menos o nome e a cidade do local."); return; }
+  var dados = {
+    nome: nome,
+    cidade: cidade,
+    estado: document.getElementById("flEstado").value.trim().toUpperCase(),
+    endereco: document.getElementById("flEndereco").value.trim(),
+    contatoNome: document.getElementById("flContatoNome").value.trim(),
+    contatoTelefone: document.getElementById("flContatoTelefone").value.trim(),
+    contatoEmail: document.getElementById("flContatoEmail").value.trim(),
+    status: document.getElementById("flStatus").value,
+    observacoes: document.getElementById("flObservacoes").value.trim(),
+    empresaId: EMPRESA_ID
+  };
+  var ref = S.editandoLocalId ? db.collection("locais").doc(S.editandoLocalId) : db.collection("locais").doc();
+  ref.set(dados, {merge:true}).then(fecharModalLocal).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+
 /* ==========================================================
    CAMADA 8 — LISTENER DE CLIQUE ÚNICO (DELEGAÇÃO)
    ========================================================== */
@@ -1600,6 +1856,10 @@ document.addEventListener("click", function(e){
   if(e.target.id === "btnCancelarContaReceber"){ fecharModalContaReceber(); return; }
   if(e.target.id === "btnSalvarContaReceber"){ salvarContaReceber(); return; }
   if((el = e.target.closest("[data-marcar-recebido]"))){ marcarContaReceberRecebida(el.dataset.marcarRecebido); return; }
+
+  if((el = e.target.closest("[data-abrir-local]"))){ abrirModalLocal(el.dataset.abrirLocal); return; }
+  if(e.target.id === "btnCancelarLocal"){ fecharModalLocal(); return; }
+  if(e.target.id === "btnSalvarLocal"){ salvarLocal(); return; }
 });
 
 document.addEventListener("change", function(e){
@@ -1614,6 +1874,16 @@ document.addEventListener("change", function(e){
   if(e.target.id === "fvPagamento"){ S.formVenda.pagamento = e.target.value; return; }
   if(e.target.id === "fPdvPagamento"){ S.formPdvPagamento = e.target.value; return; }
   if(e.target.id === "selTemporadaFinanceiro"){ S.temporadaFiltroFinanceiro = e.target.value; rT(); return; }
+  if(e.target.id === "selTemporadaRelatorio"){ S.temporadaDetalheRelatorio = e.target.value; rT(); return; }
+  if(e.target.id === "ftLocal"){
+    var local = S.locais.find(function(l){return l.id===e.target.value;});
+    if(local){
+      document.getElementById("ftCidade").value = local.cidade;
+      document.getElementById("ftEstado").value = local.estado;
+      document.getElementById("ftEndereco").value = local.endereco;
+    }
+    return;
+  }
 });
 
 // Campos de texto/número são gravados a cada tecla, sem esperar "change" (blur),
@@ -1649,6 +1919,8 @@ function rT(){
   else if(S.tab === "alimentacao") html = rAlimentacao();
   else if(S.tab === "estoque") html = rEstoque();
   else if(S.tab === "financeiro") html = rFinanceiro();
+  else if(S.tab === "locais") html = rLocais();
+  else if(S.tab === "relatorios") html = rRelatorios();
   else if(S.tab === "config") html = rConfig();
   else html = rDashboard();
   document.getElementById("mainArea").innerHTML = html;
@@ -1666,7 +1938,7 @@ function ativarListenerSobDemanda(tab){
       rT();
     });
   }
-  if(tab==="sessoes" || tab==="bilheteria" || tab==="dashboard" || tab==="financeiro"){
+  if(tab==="sessoes" || tab==="bilheteria" || tab==="dashboard" || tab==="financeiro" || tab==="relatorios"){
     ligar("sessoes","sessoes");
     ligar("tiposIngresso","tiposIngresso");
     ligar("ingressos","ingressos");
@@ -1675,11 +1947,14 @@ function ativarListenerSobDemanda(tab){
     ligar("produtosAlimentacao","produtos",["empresaId","==",EMPRESA_ID]);
     ligar("estoqueMovimentos","movimentosEstoque");
   }
-  if(tab==="dashboard" || tab==="financeiro"){
+  if(tab==="dashboard" || tab==="financeiro" || tab==="relatorios"){
     ligar("vendasPdv","vendasPdv");
     ligar("contasPagar","contasPagar",["empresaId","==",EMPRESA_ID]);
     ligar("contasReceber","contasReceber",["empresaId","==",EMPRESA_ID]);
     ligar("centrosCusto","centrosCusto",["empresaId","==",EMPRESA_ID]);
+  }
+  if(tab==="temporadas" || tab==="locais" || tab==="relatorios"){
+    ligar("locais","locais",["empresaId","==",EMPRESA_ID]);
   }
 }
 
