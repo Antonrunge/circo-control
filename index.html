@@ -137,31 +137,44 @@
   }
   .layout{display:flex;max-width:1200px;margin:0 auto;}
   nav.side{
-    width:190px;
+    width:206px;
     flex-shrink:0;
-    padding:1.2rem .8rem;
+    padding:1.2rem .7rem;
     border-right:1px solid var(--rule);
+    background:linear-gradient(180deg, var(--paper), var(--bg) 600px);
   }
   nav.side a{
     display:flex;
     align-items:center;
-    gap:.6rem;
-    padding:.55rem .7rem;
-    border-radius:8px;
+    gap:.65rem;
+    padding:.5rem .6rem;
+    border-radius:11px;
     color:var(--ink-soft);
     text-decoration:none;
-    font-size:.9rem;
-    margin-bottom:.15rem;
+    font-size:.87rem;
+    font-weight:600;
+    margin-bottom:.25rem;
     cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
   }
   nav.side a .navIcon{
     display:inline-flex;align-items:center;justify-content:center;
-    width:26px;height:26px;border-radius:7px;font-size:14px;
+    width:32px;height:32px;border-radius:10px;font-size:15px;
     background:var(--nav-soft, var(--bg));flex-shrink:0;
+    transition:background .15s ease, box-shadow .15s ease;
   }
   nav.side a:hover{background:var(--bg);}
-  nav.side a.active{background:var(--nav-soft, var(--accent-soft));color:var(--nav-accent, var(--accent-ink));font-weight:600;}
-  nav.side a.active .navIcon{background:#fff;}
+  nav.side a:active{transform:scale(.98);}
+  nav.side a.active{
+    background:linear-gradient(135deg, var(--nav-soft, var(--accent-soft)), var(--paper));
+    color:var(--nav-accent, var(--accent-ink));
+    font-weight:700;
+    box-shadow:0 2px 8px rgba(33,26,20,.08), inset 0 0 0 1px var(--nav-soft, var(--accent-soft));
+  }
+  nav.side a.active .navIcon{
+    background:var(--nav-accent, var(--accent));
+    box-shadow:0 2px 6px rgba(33,26,20,.22);
+  }
   main{flex:1;padding:1.5rem;min-width:0;}
 
   h2.pageTitle{margin:0 0 1.2rem;font-size:1.3rem;}
@@ -261,83 +274,102 @@
   }
   .modalActions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.2rem;}
 
-  /* ---------- Gráficos do Dashboard ---------- */
+  /* ---------- Gráficos ---------- */
   .chartsGrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
   @media(max-width:900px){.chartsGrid{grid-template-columns:1fr;}}
-  .chartCard .panelBody{overflow-x:visible;}
-  .chartSvg{display:block;}
+  .chartCard .panelBody{
+    overflow-x:visible;
+    background:linear-gradient(180deg, var(--tab-soft, var(--accent-soft)) 0%, transparent 90px);
+  }
+  .chartSvg{display:block;filter:drop-shadow(0 2px 4px rgba(33,26,20,.10));}
 
-  .donutRow{display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;}
-  .legendList{display:flex;flex-direction:column;gap:.55rem;flex:1;min-width:150px;}
-  .legendItem{display:flex;align-items:center;gap:.5rem;font-size:.85rem;}
-  .legendDot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
-  .legendLabel{color:var(--ink-soft);flex:1;}
+  .donutRow{display:flex;align-items:center;gap:1.6rem;flex-wrap:wrap;}
+  .legendList{display:flex;flex-direction:column;gap:.5rem;flex:1;min-width:170px;}
+  .legendItem{
+    display:flex;align-items:center;gap:.55rem;font-size:.85rem;
+    background:var(--paper);border:1px solid var(--rule);border-radius:9px;
+    padding:.5rem .7rem;box-shadow:0 1px 3px rgba(33,26,20,.05);
+  }
+  .legendDot{width:12px;height:12px;border-radius:4px;flex-shrink:0;box-shadow:0 1px 3px rgba(33,26,20,.25);}
+  .legendLabel{color:var(--ink-soft);flex:1;font-weight:600;}
   .legendValue{font-weight:700;color:var(--ink);white-space:nowrap;}
   .legendPct{font-weight:400;color:var(--ink-faint);}
 
-  .barChart{display:flex;flex-direction:column;gap:.65rem;}
-  .barRow{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;}
-  .barLabel{font-size:.82rem;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .barTrack{background:var(--bg);border-radius:5px;height:12px;overflow:hidden;}
-  .barFill{height:100%;border-radius:5px;min-width:6px;background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));}
-  .barValue{font-size:.82rem;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .barChart{display:flex;flex-direction:column;gap:.85rem;}
+  .barRow{display:grid;grid-template-columns:130px 1fr auto;gap:.7rem;align-items:center;}
+  .barLabel{font-size:.83rem;color:var(--ink-soft);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .barTrack{background:var(--paper);border:1px solid var(--rule);border-radius:999px;height:16px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(33,26,20,.08);}
+  .barFill{
+    height:100%;border-radius:999px;min-width:16px;
+    background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%);
+    box-shadow:0 1px 4px rgba(33,26,20,.18);
+  }
+  .barValue{font-size:.85rem;font-weight:700;color:var(--ink);white-space:nowrap;}
   @media(max-width:600px){
-    .barRow{grid-template-columns:1fr;gap:.25rem;}
+    .barRow{grid-template-columns:1fr;gap:.3rem;}
     .barValue{order:3;}
   }
 
-  .ringGrid{display:flex;flex-wrap:wrap;gap:1.2rem;}
-  .ringItem{text-align:center;width:96px;}
-  .ringLabel{font-size:.78rem;color:var(--ink-soft);margin-top:.3rem;font-weight:600;}
+  .ringGrid{display:flex;flex-wrap:wrap;gap:1.4rem;justify-content:center;}
+  .ringItem{text-align:center;width:100px;}
+  .ringItem svg{filter:drop-shadow(0 3px 6px rgba(33,26,20,.14));}
+  .ringLabel{font-size:.78rem;color:var(--ink-soft);margin-top:.4rem;font-weight:700;}
   .ringSub{font-size:.72rem;color:var(--ink-faint);}
 
   /* ---------- Gráfico divergente (resultado positivo/negativo) ---------- */
-  .divergeChart{display:flex;flex-direction:column;gap:.7rem;}
-  .divergeRow{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;}
-  .divergeTrack{position:relative;height:14px;background:var(--bg);border-radius:7px;overflow:hidden;}
-  .divergeTrack::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--rule);}
-  .divergeFill{position:absolute;top:0;bottom:0;border-radius:7px;background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));}
-  @media(max-width:600px){.divergeRow{grid-template-columns:1fr;gap:.25rem;}}
+  .divergeChart{display:flex;flex-direction:column;gap:.85rem;}
+  .divergeRow{display:grid;grid-template-columns:130px 1fr auto;gap:.7rem;align-items:center;}
+  .divergeTrack{position:relative;height:16px;background:var(--paper);border:1px solid var(--rule);border-radius:999px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(33,26,20,.08);}
+  .divergeTrack::after{content:"";position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;background:var(--ink-faint);opacity:.4;}
+  .divergeFill{position:absolute;top:0;bottom:0;border-radius:999px;background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%);box-shadow:0 1px 4px rgba(33,26,20,.18);}
+  @media(max-width:600px){.divergeRow{grid-template-columns:1fr;gap:.3rem;}}
 
   /* ---------- Ranking com medalhas (locais) ---------- */
-  .rankList{display:flex;flex-direction:column;gap:.7rem;}
-  .rankItem{display:grid;grid-template-columns:26px 120px 1fr auto;gap:.6rem;align-items:center;}
+  .rankList{display:flex;flex-direction:column;gap:.85rem;}
+  .rankItem{display:grid;grid-template-columns:30px 120px 1fr auto;gap:.7rem;align-items:center;}
   .rankBadge{
-    width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-size:.72rem;font-weight:700;color:#fff;background:var(--tab-accent, var(--accent));flex-shrink:0;
+    width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:.76rem;font-weight:700;color:#fff;background:var(--tab-accent, var(--accent));flex-shrink:0;
+    box-shadow:0 2px 5px rgba(33,26,20,.25);
   }
-  .rankBadge.gold{background:#c9971f;}
-  .rankBadge.silver{background:#9098a0;}
-  .rankBadge.bronze{background:#b5651d;}
-  .rankTrack{background:var(--bg);border-radius:5px;height:10px;overflow:hidden;}
-  .rankFill{height:100%;border-radius:5px;min-width:6px;background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));}
-  @media(max-width:600px){.rankItem{grid-template-columns:26px 1fr;grid-template-areas:"badge label" "badge track" "badge value";row-gap:.2rem;}}
+  .rankBadge.gold{background:linear-gradient(135deg,#e2b23a,#c9971f);}
+  .rankBadge.silver{background:linear-gradient(135deg,#b9c0c6,#9098a0);}
+  .rankBadge.bronze{background:linear-gradient(135deg,#cf8442,#b5651d);}
+  .rankTrack{background:var(--paper);border:1px solid var(--rule);border-radius:999px;height:14px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(33,26,20,.08);}
+  .rankFill{height:100%;border-radius:999px;min-width:14px;background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%);box-shadow:0 1px 4px rgba(33,26,20,.18);}
+  @media(max-width:600px){.rankItem{grid-template-columns:28px 1fr;grid-template-areas:"badge label" "badge track" "badge value";row-gap:.25rem;}}
 
   /* ---------- Barra com marcador de limite (estoque) ---------- */
-  .bulletChart{display:flex;flex-direction:column;gap:.8rem;}
-  .bulletRow{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;}
-  .bulletTrack{position:relative;background:var(--bg);border-radius:5px;height:14px;overflow:visible;}
-  .bulletFill{height:100%;border-radius:5px;position:relative;z-index:1;background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));}
-  .bulletMark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.5;z-index:2;}
-  @media(max-width:600px){.bulletRow{grid-template-columns:1fr;gap:.25rem;}}
+  .bulletChart{display:flex;flex-direction:column;gap:.9rem;}
+  .bulletRow{display:grid;grid-template-columns:130px 1fr auto;gap:.7rem;align-items:center;}
+  .bulletTrack{position:relative;background:var(--paper);border:1px solid var(--rule);border-radius:999px;height:16px;overflow:visible;box-shadow:inset 0 1px 3px rgba(33,26,20,.08);}
+  .bulletFill{height:100%;border-radius:999px;position:relative;z-index:1;background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%);box-shadow:0 1px 4px rgba(33,26,20,.18);}
+  .bulletMark{position:absolute;top:-5px;bottom:-5px;width:3px;border-radius:2px;background:var(--ink);opacity:.55;z-index:2;}
+  @media(max-width:600px){.bulletRow{grid-template-columns:1fr;gap:.3rem;}}
 
   /* ---------- Barra de composição empilhada (financeiro) ---------- */
-  .stackBar{display:flex;height:28px;border-radius:8px;overflow:hidden;margin-bottom:1rem;box-shadow:inset 0 0 0 1px var(--rule);}
-  .stackSeg{height:100%;min-width:2px;}
-  .stackLegend{display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;}
-  .stackLegendItem{display:flex;align-items:center;gap:.4rem;font-size:.83rem;color:var(--ink-soft);}
+  .stackBar{display:flex;height:34px;border-radius:12px;overflow:hidden;margin-bottom:1.1rem;box-shadow:inset 0 0 0 1px var(--rule), 0 2px 6px rgba(33,26,20,.10);}
+  .stackSeg{height:100%;min-width:3px;background-image:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 60%);}
+  .stackLegend{display:flex;flex-wrap:wrap;gap:.6rem;}
+  .stackLegendItem{
+    display:flex;align-items:center;gap:.45rem;font-size:.83rem;color:var(--ink-soft);
+    background:var(--paper);border:1px solid var(--rule);border-radius:999px;padding:.4rem .8rem .4rem .5rem;
+    box-shadow:0 1px 3px rgba(33,26,20,.05);
+  }
   .stackLegendItem strong{color:var(--ink);}
 
   /* ---------- Funil (marketing) ---------- */
-  .funnelChart{display:flex;flex-direction:column;align-items:center;gap:4px;padding:.3rem 0;}
+  .funnelChart{display:flex;flex-direction:column;align-items:center;gap:6px;padding:.4rem 0;}
   .funnelStage{
-    position:relative;display:flex;align-items:center;height:48px;border-radius:6px;color:#fff;
+    position:relative;display:flex;align-items:center;height:52px;border-radius:8px;color:#fff;
     clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 100%,0 100%);
-    transition:opacity .15s ease;
+    transition:transform .15s ease, opacity .15s ease;
+    box-shadow:0 3px 8px rgba(33,26,20,.20);
+    background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 60%);
   }
-  .funnelStage:hover{opacity:.9;}
-  .funnelLabel{position:absolute;left:24px;top:50%;transform:translateY(-50%);font-size:.82rem;font-weight:600;}
-  .funnelValue{position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:.9rem;font-weight:700;}
+  .funnelStage:hover{opacity:.92;transform:scale(1.01);}
+  .funnelLabel{position:absolute;left:24px;top:50%;transform:translateY(-50%);font-size:.85rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.15);}
+  .funnelValue{position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:.95rem;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.15);}
 
   .setupNote{
     background:var(--yellow-soft);color:#5c4514;border:1px solid #e9d9a8;
@@ -1203,7 +1235,15 @@ function svgLinhaFaturamento(pontos){
 
   var circles = pontos.map(function(p,i){
     var titulo = fdt(p.chave)+': '+fmt(p.valor);
-    return '<circle cx="'+x(i)+'" cy="'+y(p.valor).toFixed(1)+'" r="3" fill="var(--tab-accent, var(--accent))"><title>'+es(titulo)+'</title></circle>';
+    var ultimo = i===n-1;
+    var raio = ultimo ? 5.5 : 3.5;
+    return '<circle cx="'+x(i)+'" cy="'+y(p.valor).toFixed(1)+'" r="'+raio+'" fill="var(--paper)" stroke="var(--tab-accent, var(--accent))" stroke-width="'+(ultimo?3:2)+'"><title>'+es(titulo)+'</title></circle>';
+  }).join("");
+
+  // linhas de grade horizontais bem discretas, pra dar profundidade sem poluir
+  var gridLines = [0.25,0.5,0.75].map(function(f){
+    var gy = padT + f*(h-padT-padB);
+    return '<line x1="'+padL+'" y1="'+gy+'" x2="'+(w-padR)+'" y2="'+gy+'" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"/>';
   }).join("");
 
   // rótulos de eixo X: só início, meio e fim, pra não poluir
@@ -1211,16 +1251,17 @@ function svgLinhaFaturamento(pontos){
   var labels = idxLabels.map(function(i){
     var p = pontos[i];
     var lbl = p.data.getDate()+"/"+(p.data.getMonth()+1);
-    return '<text x="'+x(i)+'" y="'+(h-8)+'" font-size="9" fill="var(--ink-faint)" text-anchor="middle">'+lbl+'</text>';
+    return '<text x="'+x(i)+'" y="'+(h-8)+'" font-size="10" font-weight="600" fill="var(--ink-faint)" text-anchor="middle">'+lbl+'</text>';
   }).join("");
 
   return '<svg viewBox="0 0 '+w+' '+h+'" class="chartSvg" preserveAspectRatio="none" style="width:100%;height:190px;">'
     + '<defs><linearGradient id="gradFat" x1="0" y1="0" x2="0" y2="1">'
-    + '<stop offset="0%" stop-color="var(--tab-accent, var(--accent))" stop-opacity="0.22"/>'
+    + '<stop offset="0%" stop-color="var(--tab-accent, var(--accent))" stop-opacity="0.32"/>'
     + '<stop offset="100%" stop-color="var(--tab-accent, var(--accent))" stop-opacity="0"/></linearGradient></defs>'
-    + '<line x1="'+padL+'" y1="'+(h-padB)+'" x2="'+(w-padR)+'" y2="'+(h-padB)+'" stroke="var(--rule)" stroke-width="1"/>'
+    + gridLines
+    + '<line x1="'+padL+'" y1="'+(h-padB)+'" x2="'+(w-padR)+'" y2="'+(h-padB)+'" stroke="var(--rule)" stroke-width="1.5"/>'
     + '<path d="M '+areaPts+'" fill="url(#gradFat)" stroke="none"/>'
-    + '<path d="M '+linePts+'" fill="none" stroke="var(--tab-accent, var(--accent))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="M '+linePts+'" fill="none" stroke="var(--tab-accent, var(--accent))" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>'
     + circles + labels
     + '</svg>';
 }
@@ -1235,24 +1276,24 @@ function svgDonutReceita(dados){
     {label:"Outros", valor:dados.outros, cor:COR_RECEITA_OUTROS}
   ].filter(function(s){return s.valor>0;});
 
-  var R = 54, C = 2*Math.PI*R, cx=64, cy=64;
+  var R = 56, C = 2*Math.PI*R, cx=70, cy=70;
   var offset = 0;
   var arcos = segmentos.map(function(s){
     var frac = s.valor/total;
     var len = frac*C;
-    var gap = 2; // respiro de 2px entre fatias
+    var gap = segmentos.length>1 ? 3 : 0; // respiro entre fatias
     var dasharray = Math.max(len-gap,0)+' '+(C-Math.max(len-gap,0));
-    var el = '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+s.cor+'" stroke-width="18" '
+    var el = '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+s.cor+'" stroke-width="22" stroke-linecap="round" '
       + 'stroke-dasharray="'+dasharray+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')">'
       + '<title>'+es(s.label)+': '+fmt(s.valor)+' ('+Math.round(frac*100)+'%)</title></circle>';
     offset += len;
     return el;
   }).join("");
 
-  var svg = '<svg viewBox="0 0 128 128" style="width:128px;height:128px;flex-shrink:0;">'+arcos+
-    '<circle cx="'+cx+'" cy="'+cy+'" r="34" fill="var(--paper)"/>'+
-    '<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">'+fmt(total).replace("R$ ","")+'</text>'+
-    '<text x="'+cx+'" y="'+(cy+13)+'" text-anchor="middle" font-size="8" fill="var(--ink-faint)">total</text>'+
+  var svg = '<svg viewBox="0 0 140 140" style="width:150px;height:150px;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(33,26,20,.16));">'+arcos+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="34" fill="var(--paper)" style="filter:drop-shadow(0 1px 3px rgba(33,26,20,.12));"/>'+
+    '<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" font-size="15" font-weight="800" fill="var(--ink)">'+fmt(total).replace("R$ ","")+'</text>'+
+    '<text x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" font-size="9" font-weight="600" fill="var(--ink-faint)" letter-spacing="0.5">TOTAL</text>'+
     '</svg>';
 
   var legenda = '<div class="legendList">'+segmentos.map(function(s){
@@ -1290,14 +1331,14 @@ function svgAneisOcupacao(lista){
   return '<div class="ringGrid">'+lista.map(function(item){
     var s = item.sessao;
     var cor = item.pct>=70 ? "var(--green)" : (item.pct>=35 ? "var(--yellow)" : "var(--accent)");
-    var R=32, C=2*Math.PI*R, cx=40, cy=40;
+    var R=38, C=2*Math.PI*R, cx=48, cy=48;
     var len = (item.pct/100)*C;
-    var svg = '<svg viewBox="0 0 80 80" style="width:80px;height:80px;">'
-      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="var(--rule)" stroke-width="8"/>'
-      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+cor+'" stroke-width="8" '
+    var svg = '<svg viewBox="0 0 96 96" style="width:96px;height:96px;filter:drop-shadow(0 3px 6px rgba(33,26,20,.16));">'
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="var(--paper)" stroke="var(--rule)" stroke-width="9"/>'
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+cor+'" stroke-width="9" '
       + 'stroke-linecap="round" stroke-dasharray="'+len+' '+(C-len)+'" transform="rotate(-90 '+cx+' '+cy+')">'
       + '<title>'+item.vendidos+' de '+item.capacidade+' lugares vendidos</title></circle>'
-      + '<text x="'+cx+'" y="'+(cy+5)+'" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">'+item.pct+'%</text>'
+      + '<text x="'+cx+'" y="'+(cy+6)+'" text-anchor="middle" font-size="18" font-weight="800" fill="var(--ink)">'+item.pct+'%</text>'
       + '</svg>';
     return '<div class="ringItem">'+svg
       + '<div class="ringLabel">'+fdt(s.data)+(s.hora?" · "+es(s.hora):"")+'</div>'
@@ -1333,14 +1374,14 @@ function svgDonutGenerico(segmentos, opts){
   if(total<=0) return '<div class="emptyState">'+(opts.vazio||"Sem dados suficientes ainda.")+'</div>';
   segmentos = segmentos.filter(function(s){return s.valor>0;});
 
-  var R = 54, C = 2*Math.PI*R, cx=64, cy=64;
+  var R = 56, C = 2*Math.PI*R, cx=70, cy=70;
   var offset = 0;
   var arcos = segmentos.map(function(s){
     var frac = s.valor/total;
     var len = frac*C;
-    var gap = 2;
+    var gap = segmentos.length>1 ? 3 : 0;
     var dasharray = Math.max(len-gap,0)+' '+(C-Math.max(len-gap,0));
-    var el = '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+s.cor+'" stroke-width="18" '
+    var el = '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+s.cor+'" stroke-width="22" stroke-linecap="round" '
       + 'stroke-dasharray="'+dasharray+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')">'
       + '<title>'+es(s.label)+': '+es(formatarValor(s.valor))+' ('+Math.round(frac*100)+'%)</title></circle>';
     offset += len;
@@ -1348,10 +1389,10 @@ function svgDonutGenerico(segmentos, opts){
   }).join("");
 
   var centro = opts.centroTexto || formatarValor(total).replace("R$ ","");
-  var svg = '<svg viewBox="0 0 128 128" style="width:128px;height:128px;flex-shrink:0;">'+arcos+
-    '<circle cx="'+cx+'" cy="'+cy+'" r="34" fill="var(--paper)"/>'+
-    '<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">'+es(centro)+'</text>'+
-    '<text x="'+cx+'" y="'+(cy+13)+'" text-anchor="middle" font-size="8" fill="var(--ink-faint)">'+(opts.centroLabel||"total")+'</text>'+
+  var svg = '<svg viewBox="0 0 140 140" style="width:150px;height:150px;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(33,26,20,.16));">'+arcos+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="34" fill="var(--paper)" style="filter:drop-shadow(0 1px 3px rgba(33,26,20,.12));"/>'+
+    '<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" font-size="15" font-weight="800" fill="var(--ink)">'+es(centro)+'</text>'+
+    '<text x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" font-size="9" font-weight="600" fill="var(--ink-faint)" letter-spacing="0.5">'+es((opts.centroLabel||"total").toUpperCase())+'</text>'+
     '</svg>';
 
   var legenda = '<div class="legendList">'+segmentos.map(function(s){
