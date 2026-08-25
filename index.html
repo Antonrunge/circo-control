@@ -21,6 +21,32 @@
     --yellow-soft:#f7edd6;
     --shadow:0 1px 2px rgba(33,26,20,.08);
   }
+  /* ---------- Cor de destaque por módulo (mantém fundo claro, muda só o acento) ---------- */
+  body[data-tab="dashboard"]   {--tab-accent:#a3241f; --tab-soft:#f1e0d8;}
+  body[data-tab="temporadas"]  {--tab-accent:#a67c1e; --tab-soft:#f7edd6;}
+  body[data-tab="locais"]      {--tab-accent:#1f7a6c; --tab-soft:#ddf2ee;}
+  body[data-tab="sessoes"]     {--tab-accent:#6d4aa8; --tab-soft:#ece5f7;}
+  body[data-tab="bilheteria"]  {--tab-accent:#7c3aed; --tab-soft:#ede4fb;}
+  body[data-tab="alimentacao"] {--tab-accent:#c2650f; --tab-soft:#fbe8d8;}
+  body[data-tab="estoque"]     {--tab-accent:#2563a8; --tab-soft:#dfeaf7;}
+  body[data-tab="financeiro"]  {--tab-accent:#2f8f5b; --tab-soft:#e1f4e9;}
+  body[data-tab="pessoas"]     {--tab-accent:#2b7a9e; --tab-soft:#dcf0f6;}
+  body[data-tab="folha"]       {--tab-accent:#b3436b; --tab-soft:#fbe3ec;}
+  body[data-tab="relatorios"]  {--tab-accent:#c2650f; --tab-soft:#fbe9d8;}
+  body[data-tab="config"]      {--tab-accent:#6b5c4d; --tab-soft:#ece5da;}
+
+  body[data-tab="dashboard"]   h2.pageTitle::before{content:"🏠 ";}
+  body[data-tab="temporadas"]  h2.pageTitle::before{content:"📅 ";}
+  body[data-tab="locais"]      h2.pageTitle::before{content:"📍 ";}
+  body[data-tab="sessoes"]     h2.pageTitle::before{content:"🎭 ";}
+  body[data-tab="bilheteria"]  h2.pageTitle::before{content:"🎟️ ";}
+  body[data-tab="alimentacao"] h2.pageTitle::before{content:"🍿 ";}
+  body[data-tab="estoque"]     h2.pageTitle::before{content:"📦 ";}
+  body[data-tab="financeiro"]  h2.pageTitle::before{content:"💰 ";}
+  body[data-tab="pessoas"]     h2.pageTitle::before{content:"👥 ";}
+  body[data-tab="folha"]       h2.pageTitle::before{content:"💳 ";}
+  body[data-tab="relatorios"]  h2.pageTitle::before{content:"📊 ";}
+  body[data-tab="config"]      h2.pageTitle::before{content:"⚙️ ";}
   *{box-sizing:border-box;}
   body{
     margin:0;
@@ -115,17 +141,25 @@
     border-right:1px solid var(--rule);
   }
   nav.side a{
-    display:block;
+    display:flex;
+    align-items:center;
+    gap:.6rem;
     padding:.55rem .7rem;
-    border-radius:6px;
+    border-radius:8px;
     color:var(--ink-soft);
     text-decoration:none;
     font-size:.9rem;
     margin-bottom:.15rem;
     cursor:pointer;
   }
+  nav.side a .navIcon{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border-radius:7px;font-size:14px;
+    background:var(--nav-soft, var(--bg));flex-shrink:0;
+  }
   nav.side a:hover{background:var(--bg);}
-  nav.side a.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600;}
+  nav.side a.active{background:var(--nav-soft, var(--accent-soft));color:var(--nav-accent, var(--accent-ink));font-weight:600;}
+  nav.side a.active .navIcon{background:#fff;}
   main{flex:1;padding:1.5rem;min-width:0;}
 
   h2.pageTitle{margin:0 0 1.2rem;font-size:1.3rem;}
@@ -134,9 +168,15 @@
   .card{
     background:var(--paper);
     border:1px solid var(--rule);
-    border-radius:10px;
+    border-radius:12px;
     padding:1.1rem 1.2rem;
     box-shadow:var(--shadow);
+  }
+  .card .iconBadge{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:34px;height:34px;border-radius:9px;font-size:16px;
+    background:var(--tab-soft, var(--accent-soft));
+    margin-bottom:.6rem;
   }
   .card .label{font-size:.78rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;}
   .card .value{font-size:1.5rem;font-weight:700;}
@@ -151,7 +191,8 @@
   .panel{
     background:var(--paper);
     border:1px solid var(--rule);
-    border-radius:10px;
+    border-top:3px solid var(--tab-accent, var(--accent));
+    border-radius:12px;
     box-shadow:var(--shadow);
     margin-bottom:1.5rem;
     overflow:hidden;
@@ -174,10 +215,10 @@
   .emptyState{color:var(--ink-faint);text-align:center;padding:2rem 1rem;font-size:.9rem;}
 
   .btnSmall{
-    background:var(--accent);color:#fff;border:none;border-radius:6px;
+    background:var(--tab-accent, var(--accent));color:#fff;border:none;border-radius:6px;
     padding:.5rem .9rem;cursor:pointer;font-size:.85rem;font-weight:600;
   }
-  .btnSmall.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent-soft);}
+  .btnSmall.ghost{background:transparent;color:var(--tab-accent, var(--accent));border:1px solid var(--tab-soft, var(--accent-soft));}
 
   /* ---------- Modal ---------- */
   .modalOverlay{
@@ -629,18 +670,18 @@ var db = firebase.firestore();
 var EMPRESA_ID = "circo_principal"; // Fase 1: uma empresa só. Multiempresa vem depois.
 
 var NAV = [
-  {id:"dashboard",    label:"Dashboard"},
-  {id:"temporadas",   label:"Temporadas"},
-  {id:"locais",       label:"Locais"},
-  {id:"sessoes",      label:"Sessões"},
-  {id:"bilheteria",   label:"Bilheteria"},
-  {id:"alimentacao",  label:"Alimentação"},
-  {id:"estoque",      label:"Estoque"},
-  {id:"financeiro",   label:"Financeiro"},
-  {id:"pessoas",      label:"Pessoas"},
-  {id:"folha",        label:"Folha"},
-  {id:"relatorios",   label:"Relatórios"},
-  {id:"config",       label:"Configurações"}
+  {id:"dashboard",    label:"Dashboard",     icon:"🏠", accent:"#a3241f", soft:"#f1e0d8"},
+  {id:"temporadas",   label:"Temporadas",    icon:"📅", accent:"#a67c1e", soft:"#f7edd6"},
+  {id:"locais",       label:"Locais",        icon:"📍", accent:"#1f7a6c", soft:"#ddf2ee"},
+  {id:"sessoes",      label:"Sessões",       icon:"🎭", accent:"#6d4aa8", soft:"#ece5f7"},
+  {id:"bilheteria",   label:"Bilheteria",    icon:"🎟️", accent:"#7c3aed", soft:"#ede4fb"},
+  {id:"alimentacao",  label:"Alimentação",   icon:"🍿", accent:"#c2650f", soft:"#fbe8d8"},
+  {id:"estoque",      label:"Estoque",       icon:"📦", accent:"#2563a8", soft:"#dfeaf7"},
+  {id:"financeiro",   label:"Financeiro",    icon:"💰", accent:"#2f8f5b", soft:"#e1f4e9"},
+  {id:"pessoas",      label:"Pessoas",       icon:"👥", accent:"#2b7a9e", soft:"#dcf0f6"},
+  {id:"folha",        label:"Folha",         icon:"💳", accent:"#b3436b", soft:"#fbe3ec"},
+  {id:"relatorios",   label:"Relatórios",    icon:"📊", accent:"#c2650f", soft:"#fbe9d8"},
+  {id:"config",       label:"Configurações", icon:"⚙️", accent:"#6b5c4d", soft:"#ece5da"}
 ];
 
 var ROLE_TABS = {
@@ -953,8 +994,25 @@ function rDashboard(){
   return html;
 }
 
+function iconForLabel(label){
+  var l = (label||"").toLowerCase();
+  if(l.indexOf("fatur")>=0) return "💰";
+  if(l.indexOf("despes")>=0) return "📉";
+  if(l.indexOf("resultado")>=0) return "📈";
+  if(l.indexOf("conta")>=0) return "🧾";
+  if(l.indexOf("temporada")>=0) return "📅";
+  if(l.indexOf("públic")>=0) return "👥";
+  if(l.indexOf("sess")>=0) return "🎭";
+  if(l.indexOf("funcion")>=0) return "👤";
+  if(l.indexOf("folha")>=0) return "💳";
+  if(l.indexOf("estoque")>=0) return "📦";
+  return null;
+}
+
 function cardKpi(label, value, sub){
-  return '<div class="card"><div class="label">'+es(label)+'</div><div class="value">'+es(value)+'</div><div class="sub">'+es(sub)+'</div></div>';
+  var moduloAtual = NAV.filter(function(n){return n.id===S.tab;})[0];
+  var icon = iconForLabel(label) || (moduloAtual ? moduloAtual.icon : "🎪");
+  return '<div class="card"><span class="iconBadge">'+icon+'</span><div class="label">'+es(label)+'</div><div class="value">'+es(value)+'</div><div class="sub">'+es(sub)+'</div></div>';
 }
 
 function statusPill(status){
@@ -2222,12 +2280,14 @@ function montarMenu(){
   NAV.forEach(function(item){
     if(abasPermitidas.indexOf(item.id) === -1) return;
     var activeCls = (S.tab === item.id) ? " active" : "";
-    html += '<a class="'+activeCls.trim()+'" data-nav="'+item.id+'">'+es(item.label)+'</a>';
+    var estiloVars = "--nav-accent:"+item.accent+";--nav-soft:"+item.soft+";";
+    html += '<a class="'+activeCls.trim()+'" style="'+estiloVars+'" data-nav="'+item.id+'"><span class="navIcon" style="color:'+item.accent+'">'+item.icon+'</span>'+es(item.label)+'</a>';
   });
   document.getElementById("navMenu").innerHTML = html;
 }
 
 function rT(){
+  document.body.setAttribute("data-tab", S.tab || "dashboard");
   montarMenu();
   ativarListenerSobDemanda(S.tab);
   var html = "";
