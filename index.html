@@ -174,15 +174,29 @@
     padding:1.1rem 1.2rem;
     box-shadow:var(--shadow);
   }
+  .card{
+    position:relative;
+    border-left:4px solid var(--tab-accent, var(--accent));
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(33,26,20,.12);}
   .card .iconBadge{
     display:inline-flex;align-items:center;justify-content:center;
-    width:34px;height:34px;border-radius:9px;font-size:16px;
-    background:var(--tab-soft, var(--accent-soft));
-    margin-bottom:.6rem;
+    width:38px;height:38px;border-radius:11px;font-size:17px;
+    background:var(--tab-accent, var(--accent));
+    box-shadow:0 3px 8px rgba(33,26,20,.16);
+    margin-bottom:.7rem;
   }
   .card .label{font-size:.78rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;}
-  .card .value{font-size:1.5rem;font-weight:700;}
-  .card .sub{font-size:.8rem;color:var(--ink-faint);margin-top:.2rem;}
+  .card .value{font-size:1.55rem;font-weight:700;display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;}
+  .card .sub{font-size:.8rem;color:var(--ink-faint);margin-top:.3rem;}
+  .card.tone-green{border-left-color:var(--green);}
+  .card.tone-red{border-left-color:var(--accent);}
+  .card.tone-yellow{border-left-color:var(--yellow);}
+  .kpiTrend{font-size:.7rem;font-weight:700;padding:.15rem .5rem;border-radius:999px;letter-spacing:.01em;}
+  .kpiTrend.trendUp{background:var(--green-soft);color:var(--green);}
+  .kpiTrend.trendDown{background:var(--accent-soft);color:var(--accent-ink);}
+  .kpiTrend.trendNeutral{background:#eee;color:#777;}
 
   .statusPill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .7rem;border-radius:999px;font-size:.82rem;font-weight:600;}
   .statusPill.green{background:var(--green-soft);color:var(--green);}
@@ -198,6 +212,14 @@
     box-shadow:var(--shadow);
     margin-bottom:1.5rem;
     overflow:hidden;
+    transition:box-shadow .15s ease;
+  }
+  .panel.chartCard:hover{box-shadow:0 8px 22px rgba(33,26,20,.10);}
+  .panel .panelHead h3{position:relative;padding-left:.85rem;}
+  .panel .panelHead h3::before{
+    content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+    width:5px;height:5px;border-radius:50%;background:var(--tab-accent, var(--accent));
+    box-shadow:0 0 0 3px var(--tab-soft, var(--accent-soft));
   }
   .panel .panelHead{
     display:flex;align-items:center;justify-content:space-between;
@@ -257,7 +279,7 @@
   .barRow{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;}
   .barLabel{font-size:.82rem;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .barTrack{background:var(--bg);border-radius:5px;height:12px;overflow:hidden;}
-  .barFill{height:100%;border-radius:5px;min-width:6px;}
+  .barFill{height:100%;border-radius:5px;min-width:6px;background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));}
   .barValue{font-size:.82rem;font-weight:700;color:var(--ink);white-space:nowrap;}
   @media(max-width:600px){
     .barRow{grid-template-columns:1fr;gap:.25rem;}
@@ -268,6 +290,54 @@
   .ringItem{text-align:center;width:96px;}
   .ringLabel{font-size:.78rem;color:var(--ink-soft);margin-top:.3rem;font-weight:600;}
   .ringSub{font-size:.72rem;color:var(--ink-faint);}
+
+  /* ---------- Gráfico divergente (resultado positivo/negativo) ---------- */
+  .divergeChart{display:flex;flex-direction:column;gap:.7rem;}
+  .divergeRow{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;}
+  .divergeTrack{position:relative;height:14px;background:var(--bg);border-radius:7px;overflow:hidden;}
+  .divergeTrack::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--rule);}
+  .divergeFill{position:absolute;top:0;bottom:0;border-radius:7px;background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));}
+  @media(max-width:600px){.divergeRow{grid-template-columns:1fr;gap:.25rem;}}
+
+  /* ---------- Ranking com medalhas (locais) ---------- */
+  .rankList{display:flex;flex-direction:column;gap:.7rem;}
+  .rankItem{display:grid;grid-template-columns:26px 120px 1fr auto;gap:.6rem;align-items:center;}
+  .rankBadge{
+    width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:.72rem;font-weight:700;color:#fff;background:var(--tab-accent, var(--accent));flex-shrink:0;
+  }
+  .rankBadge.gold{background:#c9971f;}
+  .rankBadge.silver{background:#9098a0;}
+  .rankBadge.bronze{background:#b5651d;}
+  .rankTrack{background:var(--bg);border-radius:5px;height:10px;overflow:hidden;}
+  .rankFill{height:100%;border-radius:5px;min-width:6px;background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));}
+  @media(max-width:600px){.rankItem{grid-template-columns:26px 1fr;grid-template-areas:"badge label" "badge track" "badge value";row-gap:.2rem;}}
+
+  /* ---------- Barra com marcador de limite (estoque) ---------- */
+  .bulletChart{display:flex;flex-direction:column;gap:.8rem;}
+  .bulletRow{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;}
+  .bulletTrack{position:relative;background:var(--bg);border-radius:5px;height:14px;overflow:visible;}
+  .bulletFill{height:100%;border-radius:5px;position:relative;z-index:1;background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));}
+  .bulletMark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.5;z-index:2;}
+  @media(max-width:600px){.bulletRow{grid-template-columns:1fr;gap:.25rem;}}
+
+  /* ---------- Barra de composição empilhada (financeiro) ---------- */
+  .stackBar{display:flex;height:28px;border-radius:8px;overflow:hidden;margin-bottom:1rem;box-shadow:inset 0 0 0 1px var(--rule);}
+  .stackSeg{height:100%;min-width:2px;}
+  .stackLegend{display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;}
+  .stackLegendItem{display:flex;align-items:center;gap:.4rem;font-size:.83rem;color:var(--ink-soft);}
+  .stackLegendItem strong{color:var(--ink);}
+
+  /* ---------- Funil (marketing) ---------- */
+  .funnelChart{display:flex;flex-direction:column;align-items:center;gap:4px;padding:.3rem 0;}
+  .funnelStage{
+    position:relative;display:flex;align-items:center;height:48px;border-radius:6px;color:#fff;
+    clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 100%,0 100%);
+    transition:opacity .15s ease;
+  }
+  .funnelStage:hover{opacity:.9;}
+  .funnelLabel{position:absolute;left:24px;top:50%;transform:translateY(-50%);font-size:.82rem;font-weight:600;}
+  .funnelValue{position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:.9rem;font-weight:700;}
 
   .setupNote{
     background:var(--yellow-soft);color:#5c4514;border:1px solid #e9d9a8;
@@ -1294,35 +1364,114 @@ function svgDonutGenerico(segmentos, opts){
   return '<div class="donutRow">'+svg+legenda+'</div>';
 }
 
+// Barras divergentes — para valores que podem ser positivos ou negativos (resultado financeiro).
+// A barra nasce do centro (zero) e cresce pra direita (verde, positivo) ou pra esquerda (vermelho, negativo).
+function svgBarrasDivergente(itens){
+  if(!itens || itens.length===0) return '<div class="emptyState">Sem dados suficientes ainda.</div>';
+  var maxAbs = Math.max.apply(null, itens.map(function(i){return Math.abs(i.valor);})) || 1;
+  return '<div class="divergeChart">'+itens.map(function(it){
+    var positivo = it.valor>=0;
+    var pct = it.valor===0 ? 0 : Math.max(Math.min(Math.abs(it.valor)/maxAbs*50, 50), 3);
+    var cor = positivo ? "var(--green)" : "var(--accent)";
+    var style = positivo ? ('left:50%;width:'+pct+'%;') : ('right:50%;width:'+pct+'%;');
+    return '<div class="divergeRow">'
+      + '<div class="barLabel">'+es(it.label)+'</div>'
+      + '<div class="divergeTrack"><div class="divergeFill" style="'+style+'background:'+cor+'" title="'+es(it.label)+': '+fmt(it.valor)+'"></div></div>'
+      + '<div class="barValue" style="color:'+cor+'">'+fmt(it.valor)+'</div>'
+      + '</div>';
+  }).join("")+'</div>';
+}
+
+// Ranking com medalhas — pro 1º, 2º e 3º lugar, e barra proporcional ao valor.
+function svgRankList(itens){
+  if(!itens || itens.length===0) return '<div class="emptyState">Sem dados suficientes ainda.</div>';
+  var max = Math.max.apply(null, itens.map(function(i){return Math.max(i.valor,0);})) || 1;
+  var medalhas = ["gold","silver","bronze"];
+  return '<div class="rankList">'+itens.map(function(it, idx){
+    var pct = Math.max((Math.max(it.valor,0)/max)*100, 4);
+    var badgeCls = idx<3 ? " "+medalhas[idx] : "";
+    return '<div class="rankItem">'
+      + '<div class="rankBadge'+badgeCls+'">'+(idx+1)+'</div>'
+      + '<div class="barLabel">'+es(it.label)+'</div>'
+      + '<div class="rankTrack"><div class="rankFill" style="width:'+pct+'%;background:'+(it.cor||"var(--tab-accent, var(--accent))")+'" title="'+es(it.label)+': '+fmt(it.valor)+'"></div></div>'
+      + '<div class="barValue">'+fmt(it.valor)+'</div>'
+      + '</div>';
+  }).join("")+'</div>';
+}
+
+// Barra com marcador de limite — mostra o valor atual e um traço no ponto de referência (ex: estoque mínimo).
+function svgBarraLimite(itens){
+  if(!itens || itens.length===0) return '<div class="emptyState">Sem dados suficientes ainda.</div>';
+  var max = Math.max.apply(null, itens.map(function(i){return Math.max(i.valor, i.limite||0);})) || 1;
+  return '<div class="bulletChart">'+itens.map(function(it){
+    var pctValor = it.valor>0 ? Math.max((it.valor/max)*100, 3) : 0;
+    var pctLimite = (it.limite!==undefined && it.limite!==null) ? Math.min((it.limite/max)*100, 100) : null;
+    var cor = it.cor || "var(--tab-accent, var(--accent))";
+    var marcador = pctLimite!==null ? '<div class="bulletMark" style="left:'+pctLimite+'%" title="Mínimo: '+it.limite+' un."></div>' : "";
+    return '<div class="bulletRow">'
+      + '<div class="barLabel">'+es(it.label)+'</div>'
+      + '<div class="bulletTrack"><div class="bulletFill" style="width:'+pctValor+'%;background:'+cor+'" title="'+es(it.label)+': '+it.valor+' un."></div>'+marcador+'</div>'
+      + '<div class="barValue">'+it.valor+' un.</div>'
+      + '</div>';
+  }).join("")+'</div>';
+}
+
+// Barra de composição empilhada — uma única barra dividida proporcionalmente entre categorias, com legenda.
+function svgComposicaoBarra(lista, opts){
+  opts = opts || {};
+  var formatarValor = opts.formatarValor || fmt;
+  if(!lista || lista.length===0) return '<div class="emptyState">'+(opts.vazio||"Sem dados suficientes ainda.")+'</div>';
+  var principais = lista.slice(0,6);
+  var restante = lista.slice(6).reduce(function(a,c){return a+c.valor;},0);
+  var itens = principais.map(function(c,i){return {categoria:c.categoria, valor:c.valor, cor:PALETA_CATEGORIAS[i%PALETA_CATEGORIAS.length]};});
+  if(restante>0) itens.push({categoria:"Outras categorias", valor:restante, cor:COR_CATEGORIA_RESTANTE});
+  var total = itens.reduce(function(a,i){return a+i.valor;},0) || 1;
+  var segs = itens.map(function(it){
+    var pct = (it.valor/total)*100;
+    return '<div class="stackSeg" style="width:'+pct+'%;background:'+it.cor+'" title="'+es(it.categoria)+': '+formatarValor(it.valor)+' ('+Math.round(pct)+'%)"></div>';
+  }).join("");
+  var legenda = '<div class="stackLegend">'+itens.map(function(it){
+    var pct = Math.round((it.valor/total)*100);
+    return '<div class="stackLegendItem"><span class="legendDot" style="background:'+it.cor+'"></span>'+es(it.categoria)+' — <strong>'+formatarValor(it.valor)+'</strong> <span class="legendPct">('+pct+'%)</span></div>';
+  }).join("")+'</div>';
+  return '<div class="stackBar">'+segs+'</div>'+legenda;
+}
+
+// Funil — cada etapa é uma faixa com largura proporcional ao valor, afunilando visualmente.
+function svgFunil(itens){
+  if(!itens || itens.length===0) return '<div class="emptyState">Sem dados suficientes ainda.</div>';
+  var max = Math.max.apply(null, itens.map(function(i){return i.valor;})) || 1;
+  return '<div class="funnelChart">'+itens.map(function(it){
+    var pct = Math.max((it.valor/max)*100, 24);
+    var cor = it.cor || "var(--tab-accent, var(--accent))";
+    return '<div class="funnelStage" style="width:'+pct+'%;background:'+cor+'" title="'+es(it.label)+': '+it.valor+'">'
+      + '<span class="funnelLabel">'+es(it.label)+'</span>'
+      + '<span class="funnelValue">'+it.valor+'</span>'
+      + '</div>';
+  }).join("")+'</div>';
+}
+
 /* ---------- Dados por aba, para os gráficos individuais ---------- */
 
-// Temporadas: resultado (receita-despesa) de cada temporada ativa/encerrada — melhor em verde, pior em vermelho.
+// Temporadas: resultado (receita-despesa) de cada temporada ativa/encerrada — barra divergente (positivo/negativo).
 function graficoResultadoTemporadas(){
   var comparaveis = S.temporadas.filter(function(t){return t.status==="ativa"||t.status==="encerrada";});
   if(comparaveis.length===0) return null;
-  var lista = comparaveis.map(function(t){
+  var itens = comparaveis.map(function(t){
     var r = temporadaResultado(t.id);
     return {label:t.nome, valor:r.resultado};
   });
-  var maxValor = Math.max.apply(null, lista.map(function(i){return i.valor;}));
-  var minValor = Math.min.apply(null, lista.map(function(i){return i.valor;}));
-  var itens = lista.map(function(i){
-    var cor = "var(--tab-accent, var(--accent))";
-    if(lista.length>1 && i.valor===maxValor) cor = "var(--green)";
-    else if(lista.length>1 && i.valor===minValor) cor = "var(--accent)";
-    return {label:i.label, valor:i.valor, cor:cor};
-  });
-  return svgBarrasHoriz(itens);
+  return svgBarrasDivergente(itens);
 }
 
-// Locais: resultado somado por local — mesma fonte do ranking em Relatórios.
+// Locais: resultado somado por local — ranking com medalhas, mesma fonte do ranking em Relatórios.
 function graficoRankingLocais(){
   var ranking = rankingLocais(6);
   if(ranking.length===0) return null;
-  var itens = ranking.map(function(r, idx){
-    return {label:r.nome, valor:r.resultado, cor: idx===0 ? "var(--green)" : "var(--tab-accent, var(--accent))"};
+  var itens = ranking.map(function(r){
+    return {label:r.nome, valor:r.resultado};
   });
-  return svgBarrasHoriz(itens);
+  return svgRankList(itens);
 }
 
 // Sessões: ocupação (vendidos/capacidade) de cada sessão da temporada selecionada.
@@ -1363,14 +1512,14 @@ function graficoProdutosMaisVendidos(){
   return svgBarrasHoriz(itens, {formatarValor: function(v){ return v+" un."; }});
 }
 
-// Estoque: quantidade atual de cada produto — vermelho quando está abaixo do mínimo.
+// Estoque: quantidade atual de cada produto, com um traço marcando o estoque mínimo — vermelho quando está abaixo dele.
 function graficoEstoqueAtual(){
   if(S.produtos.length===0) return null;
   var itens = S.produtos.slice().sort(function(a,b){return (a.estoqueAtual||0)-(b.estoqueAtual||0);}).map(function(p){
     var baixo = (p.estoqueAtual||0) <= (p.estoqueMinimo||0);
-    return {label:p.nome, valor:p.estoqueAtual||0, cor: baixo ? "var(--accent)" : "var(--tab-accent, var(--accent))"};
+    return {label:p.nome, valor:p.estoqueAtual||0, limite:p.estoqueMinimo||0, cor: baixo ? "var(--accent)" : "var(--tab-accent, var(--accent))"};
   });
-  return svgBarrasHoriz(itens, {formatarValor: function(v){ return v+" un."; }});
+  return svgBarraLimite(itens);
 }
 
 // Financeiro: despesas pagas por categoria, respeitando o filtro de temporada da própria aba (reaproveita svgBarrasDespesas).
@@ -1387,7 +1536,7 @@ function despesasPorCategoriaTemporada(temporadaId){
   return lista;
 }
 
-// Pessoas: quantidade de colaboradores ativos por setor.
+// Pessoas: quantidade de colaboradores ativos por setor — rosca de composição da equipe.
 function graficoEquipePorSetor(){
   var ativos = S.funcionarios.filter(function(f){return f.ativo!==false;});
   if(ativos.length===0) return null;
@@ -1396,8 +1545,13 @@ function graficoEquipePorSetor(){
     var setor = f.setor || "Sem setor";
     mapa[setor] = (mapa[setor]||0) + 1;
   });
-  var itens = Object.keys(mapa).map(function(k){return {label:k, valor:mapa[k]};}).sort(function(a,b){return b.valor-a.valor;});
-  return svgBarrasHoriz(itens, {formatarValor: function(v){ return v+(v===1?" pessoa":" pessoas"); }});
+  var chaves = Object.keys(mapa).sort(function(a,b){return mapa[b]-mapa[a];});
+  var segmentos = chaves.map(function(k,i){return {label:k, valor:mapa[k], cor:PALETA_CATEGORIAS[i%PALETA_CATEGORIAS.length]};});
+  return svgDonutGenerico(segmentos, {
+    centroTexto: String(ativos.length),
+    centroLabel: "pessoas",
+    formatarValor: function(v){ return v+(v===1?" pessoa":" pessoas"); }
+  });
 }
 
 // Folha: valor total por status (pendente/aprovado/pago).
@@ -1421,7 +1575,7 @@ function graficoLeadsFunil(){
   var itens = ordem.filter(function(k){return mapa[k]>0;}).map(function(k){
     return {label:(LEAD_STATUS[k]||{}).txt||k, valor:mapa[k], cor:cores[k]};
   });
-  return svgBarrasHoriz(itens, {formatarValor: function(v){ return v+(v===1?" contato":" contatos"); }});
+  return svgFunil(itens);
 }
 
 function rDashboard(){
@@ -1441,6 +1595,17 @@ function rDashboard(){
   var contasVencidas = S.contasPagar.filter(function(c){return c.status==="pendente" && c.vencimento && c.vencimento<hoje;});
   var contasAVencer = S.contasPagar.filter(function(c){return c.status==="pendente" && c.vencimento && c.vencimento>=hoje && diasAtras(c.vencimento) >= -7;});
 
+  // Comparação honesta com o período anterior: usa os mesmos 14 dias que já alimentam o gráfico de
+  // faturamento (7 dias mais recentes vs os 7 dias antes deles) — nunca inventa uma tendência sem dado real.
+  var pontos14 = faturamentoDiario(14);
+  var somaUlt7 = pontos14.slice(7).reduce(function(a,p){return a+p.valor;},0);
+  var somaAnt7 = pontos14.slice(0,7).reduce(function(a,p){return a+p.valor;},0);
+  var trendFaturamento = null;
+  if(somaAnt7>0){
+    var variacao = Math.round(((somaUlt7-somaAnt7)/somaAnt7)*100);
+    trendFaturamento = {dir: variacao>0?"up":(variacao<0?"down":"neutral"), text:(variacao>0?"+":"")+variacao+"% vs. 7 dias antes"};
+  }
+
   var html = '<h2 class="pageTitle">Visão geral do circo</h2>';
 
   var situacao = contasVencidas.length>0 ? {txt:"🔴 Atenção — contas vencidas", cls:"red"}
@@ -1449,12 +1614,12 @@ function rDashboard(){
 
   html += '<div class="grid">';
   html += cardKpi("Faturamento hoje", fmt(faturamentoHoje), "Bilheteria + alimentação");
-  html += cardKpi("Faturamento (7 dias)", fmt(faturamentoSemana), "Últimos 7 dias");
+  html += cardKpi("Faturamento (7 dias)", fmt(faturamentoSemana), "Últimos 7 dias", trendFaturamento ? {trend:trendFaturamento} : null);
   html += cardKpi("Faturamento (30 dias)", fmt(faturamentoMes), "Últimos 30 dias");
-  html += cardKpi("Resultado (30 dias)", fmt(resultadoMes), resultadoMes>=0 ? "Faturamento acima das despesas pagas" : "Despesas pagas acima do faturamento");
+  html += cardKpi("Resultado (30 dias)", fmt(resultadoMes), resultadoMes>=0 ? "Faturamento acima das despesas pagas" : "Despesas pagas acima do faturamento", {tone: resultadoMes>=0?"green":"red"});
   html += cardKpi("Despesas hoje", fmt(despesaHoje), "Contas pagas hoje");
-  html += cardKpi("Contas vencidas", contasVencidas.length, contasVencidas.length ? "Verifique em Financeiro" : "Nenhuma pendência vencida");
-  html += cardKpi("Contas a vencer (7 dias)", contasAVencer.length, "Fique de olho no fluxo de caixa");
+  html += cardKpi("Contas vencidas", contasVencidas.length, contasVencidas.length ? "Verifique em Financeiro" : "Nenhuma pendência vencida", {tone: contasVencidas.length>0?"red":"green"});
+  html += cardKpi("Contas a vencer (7 dias)", contasAVencer.length, "Fique de olho no fluxo de caixa", contasAVencer.length>0 ? {tone:"yellow"} : null);
   var folhaPendente = S.folhas.filter(function(f){return f.status!=="pago";}).reduce(function(a,f){return a+(f.totalPagar||0);},0);
   html += cardKpi("Folha pendente", fmt(folhaPendente), "A pagar à equipe");
   html += cardKpi("Temporadas ativas", ativas.length, ativas.length ? ativas.map(function(t){return t.cidade;}).join(", ") : "Nenhuma temporada ativa");
@@ -1505,10 +1670,19 @@ function iconForLabel(label){
   return null;
 }
 
-function cardKpi(label, value, sub){
+function cardKpi(label, value, sub, opts){
+  opts = opts || {};
   var moduloAtual = NAV.filter(function(n){return n.id===S.tab;})[0];
   var icon = iconForLabel(label) || (moduloAtual ? moduloAtual.icon : "🎪");
-  return '<div class="card"><span class="iconBadge">'+icon+'</span><div class="label">'+es(label)+'</div><div class="value">'+es(value)+'</div><div class="sub">'+es(sub)+'</div></div>';
+  var trendHtml = "";
+  if(opts.trend){
+    var dir = opts.trend.dir || "neutral";
+    var cls = dir==="up" ? "trendUp" : (dir==="down" ? "trendDown" : "trendNeutral");
+    var seta = dir==="up" ? "▲" : (dir==="down" ? "▼" : "—");
+    trendHtml = '<span class="kpiTrend '+cls+'">'+seta+' '+es(opts.trend.text)+'</span>';
+  }
+  var toneCls = opts.tone ? (" tone-"+opts.tone) : "";
+  return '<div class="card'+toneCls+'"><span class="iconBadge">'+icon+'</span><div class="label">'+es(label)+'</div><div class="value">'+es(value)+trendHtml+'</div><div class="sub">'+es(sub)+'</div></div>';
 }
 
 function statusPill(status){
@@ -1888,7 +2062,7 @@ function rFinanceiro(){
   html += '<div class="setupNote" style="margin-top:1rem;">Versão simplificada do DRE (sem separar custo variável de despesa fixa ainda). A categorização completa chega quando o módulo de Folha e Contabilidade for construído.</div>';
   html += '</div></div>';
 
-  html += '<div class="panel chartCard"><div class="panelHead"><h3>Despesas pagas por categoria</h3></div><div class="panelBody">'+svgBarrasDespesas(despesasPorCategoriaTemporada(filtroT))+'</div></div>';
+  html += '<div class="panel chartCard"><div class="panelHead"><h3>Despesas pagas por categoria</h3></div><div class="panelBody">'+svgComposicaoBarra(despesasPorCategoriaTemporada(filtroT))+'</div></div>';
 
   return html;
 }
@@ -2058,7 +2232,7 @@ function rFolha(){
   var pagoNoMes = S.folhas.filter(function(f){return f.status==="pago" && diasAtras(f.pagoEm)<=30;}).reduce(function(a,f){return a+(f.totalPagar||0);},0);
 
   html += '<div class="grid">';
-  html += cardKpi("A pagar (pendente/aprovado)", fmt(totalPendente), pendentes.length+" lançamento(s)");
+  html += cardKpi("A pagar (pendente/aprovado)", fmt(totalPendente), pendentes.length+" lançamento(s)", pendentes.length>0 ? {tone:"yellow"} : null);
   html += cardKpi("Pago nos últimos 30 dias", fmt(pagoNoMes), "Folha semanal + mensal");
   html += cardKpi("Funcionários ativos", S.funcionarios.filter(function(f){return f.ativo!==false;}).length, "Elegíveis para folha");
   html += '</div>';
