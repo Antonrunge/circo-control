@@ -237,6 +237,36 @@
   }
   .modalActions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.2rem;}
 
+  /* ---------- Gráficos do Dashboard ---------- */
+  .chartsGrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+  @media(max-width:900px){.chartsGrid{grid-template-columns:1fr;}}
+  .chartCard .panelBody{overflow-x:visible;}
+  .chartSvg{display:block;}
+
+  .donutRow{display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;}
+  .legendList{display:flex;flex-direction:column;gap:.55rem;flex:1;min-width:150px;}
+  .legendItem{display:flex;align-items:center;gap:.5rem;font-size:.85rem;}
+  .legendDot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+  .legendLabel{color:var(--ink-soft);flex:1;}
+  .legendValue{font-weight:700;color:var(--ink);white-space:nowrap;}
+  .legendPct{font-weight:400;color:var(--ink-faint);}
+
+  .barChart{display:flex;flex-direction:column;gap:.65rem;}
+  .barRow{display:grid;grid-template-columns:130px 1fr auto;gap:.6rem;align-items:center;}
+  .barLabel{font-size:.82rem;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .barTrack{background:var(--bg);border-radius:5px;height:12px;overflow:hidden;}
+  .barFill{height:100%;border-radius:5px;min-width:6px;}
+  .barValue{font-size:.82rem;font-weight:700;color:var(--ink);white-space:nowrap;}
+  @media(max-width:600px){
+    .barRow{grid-template-columns:1fr;gap:.25rem;}
+    .barValue{order:3;}
+  }
+
+  .ringGrid{display:flex;flex-wrap:wrap;gap:1.2rem;}
+  .ringItem{text-align:center;width:96px;}
+  .ringLabel{font-size:.78rem;color:var(--ink-soft);margin-top:.3rem;font-weight:600;}
+  .ringSub{font-size:.72rem;color:var(--ink-faint);}
+
   .setupNote{
     background:var(--yellow-soft);color:#5c4514;border:1px solid #e9d9a8;
     border-radius:8px;padding:.9rem 1.1rem;font-size:.85rem;margin-bottom:1.2rem;
@@ -941,6 +971,195 @@ function produtosMaisVendidos(limite){
   return limite ? lista.slice(0,limite) : lista;
 }
 
+/* ==========================================================
+   CAMADA 6b — GRÁFICOS (SVG leve, sem biblioteca externa)
+   ========================================================== */
+var COR_RECEITA_BILHETERIA = "#7c3aed";
+var COR_RECEITA_ALIMENTACAO = "#c2650f";
+var COR_RECEITA_OUTROS = "#128f7c";
+var PALETA_CATEGORIAS = ["#a67c1e","#0f8a72","#6d4aa8","#c2650f","#2563a8","#b3436b"];
+var COR_CATEGORIA_RESTANTE = "#8a8072";
+
+function faturamentoDiario(dias){
+  var lista = [];
+  for(var d=dias-1; d>=0; d--){
+    var refDate = new Date(Date.now()-d*86400000);
+    var chave = refDate.toISOString().slice(0,10);
+    var totalDia = 0;
+    S.ingressos.forEach(function(i){
+      if(i.status==="cancelado") return;
+      if((i.criadoEm||"").slice(0,10)===chave) totalDia += (i.precoUnit||0);
+    });
+    S.vendasPdv.forEach(function(v){
+      if((v.horario||"").slice(0,10)===chave) totalDia += (v.total||0);
+    });
+    lista.push({data:refDate, chave:chave, valor:totalDia});
+  }
+  return lista;
+}
+
+function receitaPorModulo(dias){
+  var ingressosOk = S.ingressos.filter(function(i){
+    if(i.status==="cancelado") return false;
+    return dias===null ? true : diasAtras(i.criadoEm) <= dias;
+  });
+  var vendasOk = S.vendasPdv.filter(function(v){
+    return dias===null ? true : diasAtras(v.horario) <= dias;
+  });
+  var receberOk = S.contasReceber.filter(function(c){
+    if(c.status!=="recebido") return false;
+    return dias===null ? true : diasAtras(c.vencimento) <= dias;
+  });
+  var bilheteria = ingressosOk.reduce(function(a,i){return a+(i.precoUnit||0);},0);
+  var alimentacao = vendasOk.reduce(function(a,v){return a+(v.total||0);},0);
+  var outros = receberOk.reduce(function(a,c){return a+(c.valor||0);},0);
+  return {bilheteria:bilheteria, alimentacao:alimentacao, outros:outros};
+}
+
+function despesasPorCategoria(dias){
+  var mapa = {};
+  S.contasPagar.forEach(function(c){
+    if(c.status!=="pago") return;
+    if(dias!==null && diasAtras(c.pagoEm||c.vencimento) > dias) return;
+    var cat = c.categoria || "Outros";
+    mapa[cat] = (mapa[cat]||0) + (c.valor||0);
+  });
+  var lista = Object.keys(mapa).map(function(k){return {categoria:k, valor:mapa[k]};});
+  lista.sort(function(a,b){return b.valor-a.valor;});
+  return lista;
+}
+
+function proximasSessoesOcupacao(limite){
+  var hoje = hj();
+  var lista = S.sessoes.filter(function(s){return s.data >= hoje;}).slice().sort(function(a,b){return (a.data+a.hora).localeCompare(b.data+b.hora);});
+  return lista.slice(0, limite).map(function(s){
+    var vendidos = S.ingressos.filter(function(i){return i.sessaoId===s.id && i.status!=="cancelado";}).length;
+    var cap = s.capacidade || 0;
+    var pct = cap>0 ? Math.round((vendidos/cap)*100) : 0;
+    return {sessao:s, vendidos:vendidos, capacidade:cap, pct:Math.min(pct,100)};
+  });
+}
+
+// Gráfico de linha/área — uma série só, cor do módulo atual (dashboard = crimson).
+function svgLinhaFaturamento(pontos){
+  if(pontos.every(function(p){return p.valor===0;})){
+    return '<div class="emptyState">Ainda não há vendas registradas no período.</div>';
+  }
+  var w = 640, h = 190, padL = 8, padR = 8, padT = 14, padB = 26;
+  var max = Math.max.apply(null, pontos.map(function(p){return p.valor;})) || 1;
+  var n = pontos.length;
+  var stepX = (w-padL-padR) / (n-1 || 1);
+  function x(i){ return padL + i*stepX; }
+  function y(v){ return padT + (1 - v/max) * (h-padT-padB); }
+
+  var linePts = pontos.map(function(p,i){ return x(i)+','+y(p.valor).toFixed(1); }).join(" L ");
+  var areaPts = linePts + ' L '+x(n-1)+','+(h-padB)+' L '+x(0)+','+(h-padB)+' Z';
+
+  var circles = pontos.map(function(p,i){
+    var titulo = fdt(p.chave)+': '+fmt(p.valor);
+    return '<circle cx="'+x(i)+'" cy="'+y(p.valor).toFixed(1)+'" r="3" fill="var(--tab-accent, var(--accent))"><title>'+es(titulo)+'</title></circle>';
+  }).join("");
+
+  // rótulos de eixo X: só início, meio e fim, pra não poluir
+  var idxLabels = n<=7 ? pontos.map(function(_,i){return i;}) : [0, Math.floor((n-1)/2), n-1];
+  var labels = idxLabels.map(function(i){
+    var p = pontos[i];
+    var lbl = p.data.getDate()+"/"+(p.data.getMonth()+1);
+    return '<text x="'+x(i)+'" y="'+(h-8)+'" font-size="9" fill="var(--ink-faint)" text-anchor="middle">'+lbl+'</text>';
+  }).join("");
+
+  return '<svg viewBox="0 0 '+w+' '+h+'" class="chartSvg" preserveAspectRatio="none" style="width:100%;height:190px;">'
+    + '<defs><linearGradient id="gradFat" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%" stop-color="var(--tab-accent, var(--accent))" stop-opacity="0.22"/>'
+    + '<stop offset="100%" stop-color="var(--tab-accent, var(--accent))" stop-opacity="0"/></linearGradient></defs>'
+    + '<line x1="'+padL+'" y1="'+(h-padB)+'" x2="'+(w-padR)+'" y2="'+(h-padB)+'" stroke="var(--rule)" stroke-width="1"/>'
+    + '<path d="M '+areaPts+'" fill="url(#gradFat)" stroke="none"/>'
+    + '<path d="M '+linePts+'" fill="none" stroke="var(--tab-accent, var(--accent))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    + circles + labels
+    + '</svg>';
+}
+
+// Donut de receita por módulo — paleta categórica fixa (bilheteria roxo, alimentação laranja, outros verde-azulado)
+function svgDonutReceita(dados){
+  var total = dados.bilheteria + dados.alimentacao + dados.outros;
+  if(total<=0) return '<div class="emptyState">Ainda não há receita registrada no período.</div>';
+  var segmentos = [
+    {label:"Bilheteria", valor:dados.bilheteria, cor:COR_RECEITA_BILHETERIA},
+    {label:"Alimentação", valor:dados.alimentacao, cor:COR_RECEITA_ALIMENTACAO},
+    {label:"Outros", valor:dados.outros, cor:COR_RECEITA_OUTROS}
+  ].filter(function(s){return s.valor>0;});
+
+  var R = 54, C = 2*Math.PI*R, cx=64, cy=64;
+  var offset = 0;
+  var arcos = segmentos.map(function(s){
+    var frac = s.valor/total;
+    var len = frac*C;
+    var gap = 2; // respiro de 2px entre fatias
+    var dasharray = Math.max(len-gap,0)+' '+(C-Math.max(len-gap,0));
+    var el = '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+s.cor+'" stroke-width="18" '
+      + 'stroke-dasharray="'+dasharray+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')">'
+      + '<title>'+es(s.label)+': '+fmt(s.valor)+' ('+Math.round(frac*100)+'%)</title></circle>';
+    offset += len;
+    return el;
+  }).join("");
+
+  var svg = '<svg viewBox="0 0 128 128" style="width:128px;height:128px;flex-shrink:0;">'+arcos+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="34" fill="var(--paper)"/>'+
+    '<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">'+fmt(total).replace("R$ ","")+'</text>'+
+    '<text x="'+cx+'" y="'+(cy+13)+'" text-anchor="middle" font-size="8" fill="var(--ink-faint)">total</text>'+
+    '</svg>';
+
+  var legenda = '<div class="legendList">'+segmentos.map(function(s){
+    var pct = Math.round((s.valor/total)*100);
+    return '<div class="legendItem"><span class="legendDot" style="background:'+s.cor+'"></span>'
+      + '<span class="legendLabel">'+es(s.label)+'</span>'
+      + '<span class="legendValue">'+fmt(s.valor)+' <span class="legendPct">('+pct+'%)</span></span></div>';
+  }).join("")+'</div>';
+
+  return '<div class="donutRow">'+svg+legenda+'</div>';
+}
+
+// Barras horizontais — despesas por categoria, paleta categórica fixa + cinza neutro para "restante"
+function svgBarrasDespesas(lista){
+  if(lista.length===0) return '<div class="emptyState">Nenhuma despesa paga no período.</div>';
+  var principais = lista.slice(0,6);
+  var restante = lista.slice(6).reduce(function(a,c){return a+c.valor;},0);
+  var itens = principais.map(function(c,i){return {categoria:c.categoria, valor:c.valor, cor:PALETA_CATEGORIAS[i%PALETA_CATEGORIAS.length]};});
+  if(restante>0) itens.push({categoria:"Outras categorias", valor:restante, cor:COR_CATEGORIA_RESTANTE});
+  var max = Math.max.apply(null, itens.map(function(i){return i.valor;})) || 1;
+
+  return '<div class="barChart">'+itens.map(function(it){
+    var pct = Math.max((it.valor/max)*100, 4);
+    return '<div class="barRow">'
+      + '<div class="barLabel">'+es(it.categoria)+'</div>'
+      + '<div class="barTrack"><div class="barFill" style="width:'+pct+'%;background:'+it.cor+'" title="'+es(it.categoria)+': '+fmt(it.valor)+'"></div></div>'
+      + '<div class="barValue">'+fmt(it.valor)+'</div>'
+      + '</div>';
+  }).join("")+'</div>';
+}
+
+// Anéis de ocupação das próximas sessões — cor de status (verde/âmbar/vermelho) conforme % vendido
+function svgAneisOcupacao(lista){
+  if(lista.length===0) return '<div class="emptyState">Nenhuma sessão futura cadastrada.</div>';
+  return '<div class="ringGrid">'+lista.map(function(item){
+    var s = item.sessao;
+    var cor = item.pct>=70 ? "var(--green)" : (item.pct>=35 ? "var(--yellow)" : "var(--accent)");
+    var R=32, C=2*Math.PI*R, cx=40, cy=40;
+    var len = (item.pct/100)*C;
+    var svg = '<svg viewBox="0 0 80 80" style="width:80px;height:80px;">'
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="var(--rule)" stroke-width="8"/>'
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+cor+'" stroke-width="8" '
+      + 'stroke-linecap="round" stroke-dasharray="'+len+' '+(C-len)+'" transform="rotate(-90 '+cx+' '+cy+')">'
+      + '<title>'+item.vendidos+' de '+item.capacidade+' lugares vendidos</title></circle>'
+      + '<text x="'+cx+'" y="'+(cy+5)+'" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">'+item.pct+'%</text>'
+      + '</svg>';
+    return '<div class="ringItem">'+svg
+      + '<div class="ringLabel">'+fdt(s.data)+(s.hora?" · "+es(s.hora):"")+'</div>'
+      + '<div class="ringSub">'+item.vendidos+'/'+(item.capacidade||"—")+' lugares</div>'
+      + '</div>';
+  }).join("")+'</div>';
+}
+
 function rDashboard(){
   var ativas = S.temporadas.filter(function(t){return t.status==="ativa";});
   var planejadas = S.temporadas.filter(function(t){return t.status==="planejada"||t.status==="montagem";});
@@ -975,6 +1194,16 @@ function rDashboard(){
   var folhaPendente = S.folhas.filter(function(f){return f.status!=="pago";}).reduce(function(a,f){return a+(f.totalPagar||0);},0);
   html += cardKpi("Folha pendente", fmt(folhaPendente), "A pagar à equipe");
   html += cardKpi("Temporadas ativas", ativas.length, ativas.length ? ativas.map(function(t){return t.cidade;}).join(", ") : "Nenhuma temporada ativa");
+  html += '</div>';
+
+  html += '<div class="chartsGrid">';
+  html += '<div class="panel chartCard"><div class="panelHead"><h3>Faturamento — últimos 14 dias</h3></div><div class="panelBody">'+svgLinhaFaturamento(faturamentoDiario(14))+'</div></div>';
+  html += '<div class="panel chartCard"><div class="panelHead"><h3>Receita por módulo (30 dias)</h3></div><div class="panelBody">'+svgDonutReceita(receitaPorModulo(30))+'</div></div>';
+  html += '</div>';
+
+  html += '<div class="chartsGrid">';
+  html += '<div class="panel chartCard"><div class="panelHead"><h3>Despesas pagas por categoria (30 dias)</h3></div><div class="panelBody">'+svgBarrasDespesas(despesasPorCategoria(30))+'</div></div>';
+  html += '<div class="panel chartCard"><div class="panelHead"><h3>Ocupação das próximas sessões</h3></div><div class="panelBody">'+svgAneisOcupacao(proximasSessoesOcupacao(4))+'</div></div>';
   html += '</div>';
 
   html += '<div class="panel"><div class="panelHead"><h3>Temporadas ativas agora</h3></div><div class="panelBody">';
