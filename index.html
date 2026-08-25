@@ -32,6 +32,7 @@
   body[data-tab="financeiro"]  {--tab-accent:#2f8f5b; --tab-soft:#e1f4e9;}
   body[data-tab="pessoas"]     {--tab-accent:#2b7a9e; --tab-soft:#dcf0f6;}
   body[data-tab="folha"]       {--tab-accent:#b3436b; --tab-soft:#fbe3ec;}
+  body[data-tab="marketing"]   {--tab-accent:#4a4fc4; --tab-soft:#e6e5fb;}
   body[data-tab="relatorios"]  {--tab-accent:#c2650f; --tab-soft:#fbe9d8;}
   body[data-tab="config"]      {--tab-accent:#6b5c4d; --tab-soft:#ece5da;}
 
@@ -45,6 +46,7 @@
   body[data-tab="financeiro"]  h2.pageTitle::before{content:"💰 ";}
   body[data-tab="pessoas"]     h2.pageTitle::before{content:"👥 ";}
   body[data-tab="folha"]       h2.pageTitle::before{content:"💳 ";}
+  body[data-tab="marketing"]   h2.pageTitle::before{content:"📣 ";}
   body[data-tab="relatorios"]  h2.pageTitle::before{content:"📊 ";}
   body[data-tab="config"]      h2.pageTitle::before{content:"⚙️ ";}
   *{box-sizing:border-box;}
@@ -515,6 +517,56 @@
   </div>
 </div>
 
+<!-- ============ MODAL: CAMPANHA ============ -->
+<div class="modalOverlay" id="modalCampanha">
+  <div class="modalBox">
+    <h3 id="modalCampanhaTitulo">Nova campanha</h3>
+    <div class="field"><label>Nome da campanha</label><input id="fcNome" placeholder="Ex: Divulgação estreia SJC"></div>
+    <div class="field"><label>Canal</label><select id="fcCanal"></select></div>
+    <div class="field"><label>Temporada (opcional)</label><select id="fcTemporada"></select></div>
+    <div class="field"><label>Data de início</label><input type="date" id="fcDataInicio"></div>
+    <div class="field"><label>Data de encerramento</label><input type="date" id="fcDataFim"></div>
+    <div class="field"><label>Orçamento previsto</label><input type="number" id="fcOrcamento" min="0" step="0.01"></div>
+    <div class="field"><label>Valor já gasto</label><input type="number" id="fcValorGasto" min="0" step="0.01"></div>
+    <div class="field">
+      <label>Status</label>
+      <select id="fcStatus">
+        <option value="planejada">Planejada</option>
+        <option value="ativa">Ativa</option>
+        <option value="encerrada">Encerrada</option>
+      </select>
+    </div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarCampanha">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarCampanha">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: CONTATO (LEAD/CRM) ============ -->
+<div class="modalOverlay" id="modalLead">
+  <div class="modalBox">
+    <h3 id="modalLeadTitulo">Novo contato</h3>
+    <div class="field"><label>Nome</label><input id="flNomeLead" placeholder="Nome da pessoa ou empresa"></div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="flTipoLead">
+        <option value="lead">Interessado</option>
+        <option value="imprensa">Imprensa</option>
+        <option value="parceiro">Parceiro / Patrocinador</option>
+      </select>
+    </div>
+    <div class="field"><label>Cidade</label><input id="flCidadeLead" placeholder="Ex: Jacareí"></div>
+    <div class="field"><label>Telefone</label><input id="flTelefoneLead" placeholder="(00) 00000-0000"></div>
+    <div class="field"><label>E-mail</label><input id="flEmailLead" placeholder="email@exemplo.com"></div>
+    <div class="field"><label>Observações</label><input id="flObservacoesLead" placeholder="Opcional"></div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarLead">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarLead">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODAL: NOVO USUÁRIO ============ -->
 <div class="modalOverlay" id="modalUsuario">
   <div class="modalBox">
@@ -710,21 +762,22 @@ var NAV = [
   {id:"financeiro",   label:"Financeiro",    icon:"💰", accent:"#2f8f5b", soft:"#e1f4e9"},
   {id:"pessoas",      label:"Pessoas",       icon:"👥", accent:"#2b7a9e", soft:"#dcf0f6"},
   {id:"folha",        label:"Folha",         icon:"💳", accent:"#b3436b", soft:"#fbe3ec"},
+  {id:"marketing",    label:"Marketing",     icon:"📣", accent:"#4a4fc4", soft:"#e6e5fb"},
   {id:"relatorios",   label:"Relatórios",    icon:"📊", accent:"#c2650f", soft:"#fbe9d8"},
   {id:"config",       label:"Configurações", icon:"⚙️", accent:"#6b5c4d", soft:"#ece5da"}
 ];
 
 var ROLE_TABS = {
-  superadmin: ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","relatorios","config"],
-  diretor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","relatorios","config"],
-  gerente:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","relatorios"],
+  superadmin: ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","marketing","relatorios","config"],
+  diretor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","marketing","relatorios","config"],
+  gerente:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","marketing","relatorios"],
   financeiro: ["dashboard","temporadas","bilheteria","alimentacao","financeiro","folha","relatorios"],
   rh:         ["dashboard","pessoas","folha"],
   bilheteria: ["dashboard","sessoes","bilheteria"],
   caixa:      ["dashboard","alimentacao"],
   estoque:    ["dashboard","estoque","alimentacao"],
-  marketing:  ["dashboard","locais","relatorios"],
-  auditor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","relatorios"]
+  marketing:  ["dashboard","locais","marketing","relatorios"],
+  auditor:    ["dashboard","temporadas","locais","sessoes","bilheteria","alimentacao","estoque","financeiro","pessoas","folha","marketing","relatorios"]
 };
 
 var TIPO_SESSAO_LABEL = {normal:"Normal", matine:"Matinê", especial:"Especial", estreia:"Estreia"};
@@ -777,6 +830,23 @@ var STATUS_LABEL = {
   encerrada:{txt:"Encerrada", cls:"gray"}
 };
 
+/* ---------- Fase 5 — Marketing & CRM ---------- */
+var CANAL_CAMPANHA = ["Instagram","Facebook","Rádio","Outdoor","Panfletagem","Parceria local","WhatsApp","Outro"];
+var CAMPANHA_STATUS = {
+  planejada: {txt:"Planejada", cls:"gray"},
+  ativa:     {txt:"Ativa", cls:"green"},
+  encerrada: {txt:"Encerrada", cls:"gray"}
+};
+var LEAD_TIPO_LABEL = {
+  lead: "Interessado", imprensa: "Imprensa", parceiro: "Parceiro / Patrocinador"
+};
+var LEAD_STATUS = {
+  novo:       {txt:"Novo", cls:"yellow", proximo:"contatado", acaoTxt:"Marcar contatado"},
+  contatado:  {txt:"Contatado", cls:"gray", proximo:"convertido", acaoTxt:"Marcar convertido"},
+  convertido: {txt:"Convertido", cls:"green", proximo:null, acaoTxt:null},
+  perdido:    {txt:"Perdido", cls:"red", proximo:null, acaoTxt:null}
+};
+
 /* ==========================================================
    CAMADA 4 — ESTADO GLOBAL ÚNICO
    ========================================================== */
@@ -821,7 +891,13 @@ var S = {
   funcionarios: [],
   folhas: [],
   editandoFuncionarioId: null,
-  editandoFolhaId: null
+  editandoFolhaId: null,
+
+  // Fase 5 — Marketing & CRM
+  campanhas: [],
+  leads: [],
+  editandoCampanhaId: null,
+  editandoLeadId: null
 };
 
 /* ==========================================================
@@ -1218,7 +1294,7 @@ function rDashboard(){
   }
   html += '</div></div>';
 
-  html += '<div class="setupNote">Fases entregues: <strong>Fundamento</strong>, <strong>Operação</strong>, <strong>Financeiro</strong>, <strong>Locais &amp; Relatórios</strong> e <strong>Pessoas &amp; Folha</strong>. Marketing, logística e IA chegam nas próximas fases.</div>';
+  html += '<div class="setupNote">Fases entregues: <strong>Fundamento</strong>, <strong>Operação</strong>, <strong>Financeiro</strong>, <strong>Locais &amp; Relatórios</strong>, <strong>Pessoas &amp; Folha</strong> e <strong>Marketing &amp; CRM</strong>. Logística e IA chegam nas próximas fases.</div>';
 
   return html;
 }
@@ -1235,6 +1311,9 @@ function iconForLabel(label){
   if(l.indexOf("funcion")>=0) return "👤";
   if(l.indexOf("folha")>=0) return "💳";
   if(l.indexOf("estoque")>=0) return "📦";
+  if(l.indexOf("campanha")>=0) return "📣";
+  if(l.indexOf("lead")>=0) return "🧲";
+  if(l.indexOf("convers")>=0) return "🤝";
   return null;
 }
 
@@ -1773,6 +1852,61 @@ function rFolha(){
       else if(f.status==="aprovado") acao = '<button class="btnSmall ghost" data-pagar-folha="'+es(f.id)+'">Marcar pago</button>';
       html += '<tr><td>'+es(funcionarioNome(f.funcionarioId))+'</td><td>'+(f.tipo==="semanal"?"Semanal":"Mensal")+'</td><td>'+es(f.periodo)+'</td>'
         + '<td>'+fmt(f.valorBase)+'</td><td>'+fmt(f.adicionais)+'</td><td>-'+fmt(f.descontos)+'</td><td><strong>'+fmt(f.totalPagar)+'</strong></td>'
+        + '<td><span class="statusPill '+s.cls+'">'+s.txt+'</span></td><td>'+acao+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
+function rMarketing(){
+  var html = '<h2 class="pageTitle">Marketing</h2>';
+  html += '<div class="setupNote">Cadastre aqui as campanhas de divulgação de cada temporada e os contatos de interessados, imprensa e parceiros. Gastos lançados aqui entram automaticamente no Financeiro, na categoria Publicidade.</div>';
+
+  var campanhasAtivas = S.campanhas.filter(function(c){return c.status==="ativa";});
+  var investido30 = S.campanhas.filter(function(c){return c.lancadoFinanceiro && diasAtras(c.lancadoEm)<=30;}).reduce(function(a,c){return a+(c.valorGasto||0);},0);
+  var leadsNovos = S.leads.filter(function(l){return l.status==="novo";});
+  var convertidos = S.leads.filter(function(l){return l.status==="convertido";});
+  var taxaConversao = S.leads.length>0 ? Math.round((convertidos.length/S.leads.length)*100) : 0;
+
+  html += '<div class="grid">';
+  html += cardKpi("Investido em campanhas (30 dias)", fmt(investido30), "Já lançado no Financeiro");
+  html += cardKpi("Campanhas ativas", campanhasAtivas.length, campanhasAtivas.length ? campanhasAtivas.map(function(c){return c.nome;}).join(", ") : "Nenhuma campanha ativa");
+  html += cardKpi("Leads novos", leadsNovos.length, "Aguardando primeiro contato");
+  html += cardKpi("Taxa de conversão", taxaConversao+"%", convertidos.length+" convertido(s) de "+S.leads.length);
+  html += '</div>';
+
+  html += '<div class="panel"><div class="panelHead"><h3>Campanhas</h3><button class="btnSmall" data-abrir-campanha="nova">+ Nova campanha</button></div><div class="panelBody">';
+  if(S.campanhas.length===0){
+    html += '<div class="emptyState">Nenhuma campanha cadastrada ainda.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Campanha</th><th>Canal</th><th>Temporada</th><th>Orçamento</th><th>Gasto</th><th>Status</th><th></th></tr></thead><tbody>';
+    S.campanhas.slice().sort(function(a,b){return (b.dataInicio||"").localeCompare(a.dataInicio||"");}).forEach(function(c){
+      var s = CAMPANHA_STATUS[c.status] || CAMPANHA_STATUS.planejada;
+      var acao = '<button class="btnSmall ghost" data-abrir-campanha="'+es(c.id)+'">Editar</button>';
+      if(c.valorGasto>0 && !c.lancadoFinanceiro) acao += ' <button class="btnSmall ghost" data-lancar-campanha="'+es(c.id)+'">Lançar no financeiro</button>';
+      else if(c.lancadoFinanceiro) acao += ' <span class="statusPill green" style="margin-left:.4rem;">No financeiro</span>';
+      html += '<tr><td>'+es(c.nome)+'</td><td>'+es(c.canal)+'</td><td>'+es(temporadaNome(c.temporadaId))+'</td>'
+        + '<td>'+fmt(c.orcamento)+'</td><td>'+fmt(c.valorGasto)+'</td>'
+        + '<td><span class="statusPill '+s.cls+'">'+s.txt+'</span></td><td>'+acao+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  html += '<div class="panel"><div class="panelHead"><h3>Contatos (CRM)</h3><button class="btnSmall" data-abrir-lead="novo">+ Novo contato</button></div><div class="panelBody">';
+  if(S.leads.length===0){
+    html += '<div class="emptyState">Nenhum contato cadastrado ainda — leads, imprensa e parceiros aparecem aqui.</div>';
+  } else {
+    html += '<table class="list"><thead><tr><th>Nome</th><th>Tipo</th><th>Cidade</th><th>Contato</th><th>Status</th><th></th></tr></thead><tbody>';
+    S.leads.slice().sort(function(a,b){return (b.criadoEm||"").localeCompare(a.criadoEm||"");}).forEach(function(l){
+      var s = LEAD_STATUS[l.status] || LEAD_STATUS.novo;
+      var acao = '<button class="btnSmall ghost" data-abrir-lead="'+es(l.id)+'">Editar</button>';
+      if(s.proximo) acao += ' <button class="btnSmall ghost" data-avancar-lead="'+es(l.id)+'">'+es(s.acaoTxt)+'</button>';
+      html += '<tr><td>'+es(l.nome)+'</td><td>'+es(LEAD_TIPO_LABEL[l.tipo]||l.tipo)+'</td><td>'+es(l.cidade||"—")+'</td>'
+        + '<td>'+es(l.telefone||l.email||"—")+'</td>'
         + '<td><span class="statusPill '+s.cls+'">'+s.txt+'</span></td><td>'+acao+'</td></tr>';
     });
     html += '</tbody></table>';
@@ -2370,6 +2504,104 @@ function pagarFolha(id){
   lote.commit().catch(function(err){ alert("Erro: "+err.message); });
 }
 
+/* ---------- Marketing & CRM ---------- */
+function abrirModalCampanha(id){
+  S.editandoCampanhaId = (id==="nova") ? null : id;
+  var c = S.editandoCampanhaId ? S.campanhas.find(function(x){return x.id===S.editandoCampanhaId;}) : null;
+  document.getElementById("modalCampanhaTitulo").textContent = c ? "Editar campanha" : "Nova campanha";
+  document.getElementById("fcCanal").innerHTML = CANAL_CAMPANHA.map(function(ca){return '<option value="'+es(ca)+'">'+es(ca)+'</option>';}).join("");
+  document.getElementById("fcTemporada").innerHTML = '<option value="">Nenhuma</option>' + S.temporadas.map(function(t){return '<option value="'+es(t.id)+'">'+es(t.nome)+' — '+es(t.cidade)+'</option>';}).join("");
+  document.getElementById("fcNome").value = c ? c.nome : "";
+  document.getElementById("fcCanal").value = c ? c.canal : CANAL_CAMPANHA[0];
+  document.getElementById("fcTemporada").value = c ? (c.temporadaId||"") : "";
+  document.getElementById("fcDataInicio").value = c ? c.dataInicio : "";
+  document.getElementById("fcDataFim").value = c ? c.dataFim : "";
+  document.getElementById("fcOrcamento").value = c ? c.orcamento : "";
+  document.getElementById("fcValorGasto").value = c ? c.valorGasto : "0";
+  document.getElementById("fcStatus").value = c ? c.status : "planejada";
+  document.getElementById("modalCampanha").classList.add("show");
+}
+function fecharModalCampanha(){ document.getElementById("modalCampanha").classList.remove("show"); }
+function salvarCampanha(){
+  var nome = document.getElementById("fcNome").value.trim();
+  if(!nome){ alert("Informe o nome da campanha."); return; }
+  var dados = {
+    nome: nome,
+    canal: document.getElementById("fcCanal").value,
+    temporadaId: document.getElementById("fcTemporada").value || null,
+    dataInicio: document.getElementById("fcDataInicio").value,
+    dataFim: document.getElementById("fcDataFim").value,
+    orcamento: Number(document.getElementById("fcOrcamento").value)||0,
+    valorGasto: Number(document.getElementById("fcValorGasto").value)||0,
+    status: document.getElementById("fcStatus").value,
+    empresaId: EMPRESA_ID
+  };
+  var ref = S.editandoCampanhaId ? db.collection("campanhas").doc(S.editandoCampanhaId) : db.collection("campanhas").doc();
+  ref.set(dados, {merge:true}).then(fecharModalCampanha).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+// Regra de ouro: lançar o gasto da campanha já cria a conta a pagar correspondente no Financeiro,
+// na categoria Publicidade — sem precisar cadastrar de novo. Só pode ser feito uma vez por campanha.
+function lancarCampanhaFinanceiro(id){
+  var c = S.campanhas.find(function(x){return x.id===id;});
+  if(!c || c.lancadoFinanceiro || !(c.valorGasto>0)) return;
+  var agora = new Date().toISOString();
+  var lote = db.batch();
+  lote.update(db.collection("campanhas").doc(id), {lancadoFinanceiro:true, lancadoEm:agora});
+  lote.set(db.collection("contasPagar").doc(), {
+    descricao: "Campanha — "+c.nome+" ("+c.canal+")",
+    categoria: "Publicidade",
+    centroCustoId: null,
+    temporadaId: c.temporadaId || null,
+    vencimento: hj(),
+    valor: c.valorGasto,
+    status: "pago",
+    pagoEm: agora,
+    origemCampanhaId: id,
+    empresaId: EMPRESA_ID
+  });
+  lote.commit().catch(function(err){ alert("Erro: "+err.message); });
+}
+
+function abrirModalLead(id){
+  S.editandoLeadId = (id==="novo") ? null : id;
+  var l = S.editandoLeadId ? S.leads.find(function(x){return x.id===S.editandoLeadId;}) : null;
+  document.getElementById("modalLeadTitulo").textContent = l ? "Editar contato" : "Novo contato";
+  document.getElementById("flNomeLead").value = l ? l.nome : "";
+  document.getElementById("flTipoLead").value = l ? l.tipo : "lead";
+  document.getElementById("flCidadeLead").value = l ? l.cidade : "";
+  document.getElementById("flTelefoneLead").value = l ? l.telefone : "";
+  document.getElementById("flEmailLead").value = l ? l.email : "";
+  document.getElementById("flObservacoesLead").value = l ? l.observacoes : "";
+  document.getElementById("modalLead").classList.add("show");
+}
+function fecharModalLead(){ document.getElementById("modalLead").classList.remove("show"); }
+function salvarLead(){
+  var nome = document.getElementById("flNomeLead").value.trim();
+  if(!nome){ alert("Informe o nome do contato."); return; }
+  var dados = {
+    nome: nome,
+    tipo: document.getElementById("flTipoLead").value,
+    cidade: document.getElementById("flCidadeLead").value.trim(),
+    telefone: document.getElementById("flTelefoneLead").value.trim(),
+    email: document.getElementById("flEmailLead").value.trim(),
+    observacoes: document.getElementById("flObservacoesLead").value.trim(),
+    empresaId: EMPRESA_ID
+  };
+  if(!S.editandoLeadId){
+    dados.status = "novo";
+    dados.criadoEm = new Date().toISOString();
+  }
+  var ref = S.editandoLeadId ? db.collection("leads").doc(S.editandoLeadId) : db.collection("leads").doc();
+  ref.set(dados, {merge:true}).then(fecharModalLead).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+function avancarStatusLead(id){
+  var l = S.leads.find(function(x){return x.id===id;});
+  if(!l) return;
+  var s = LEAD_STATUS[l.status] || LEAD_STATUS.novo;
+  if(!s.proximo) return;
+  db.collection("leads").doc(id).update({status: s.proximo}).catch(function(err){ alert("Erro: "+err.message); });
+}
+
 /* ==========================================================
    CAMADA 8 — LISTENER DE CLIQUE ÚNICO (DELEGAÇÃO)
    ========================================================== */
@@ -2456,6 +2688,16 @@ document.addEventListener("click", function(e){
   if(e.target.id === "btnSalvarFolha"){ salvarFolha(); return; }
   if((el = e.target.closest("[data-aprovar-folha]"))){ aprovarFolha(el.dataset.aprovarFolha); return; }
   if((el = e.target.closest("[data-pagar-folha]"))){ pagarFolha(el.dataset.pagarFolha); return; }
+
+  if((el = e.target.closest("[data-abrir-campanha]"))){ abrirModalCampanha(el.dataset.abrirCampanha); return; }
+  if(e.target.id === "btnCancelarCampanha"){ fecharModalCampanha(); return; }
+  if(e.target.id === "btnSalvarCampanha"){ salvarCampanha(); return; }
+  if((el = e.target.closest("[data-lancar-campanha]"))){ lancarCampanhaFinanceiro(el.dataset.lancarCampanha); return; }
+
+  if((el = e.target.closest("[data-abrir-lead]"))){ abrirModalLead(el.dataset.abrirLead); return; }
+  if(e.target.id === "btnCancelarLead"){ fecharModalLead(); return; }
+  if(e.target.id === "btnSalvarLead"){ salvarLead(); return; }
+  if((el = e.target.closest("[data-avancar-lead]"))){ avancarStatusLead(el.dataset.avancarLead); return; }
 });
 
 document.addEventListener("change", function(e){
@@ -2530,6 +2772,7 @@ function rT(){
   else if(S.tab === "locais") html = rLocais();
   else if(S.tab === "pessoas") html = rPessoas();
   else if(S.tab === "folha") html = rFolha();
+  else if(S.tab === "marketing") html = rMarketing();
   else if(S.tab === "relatorios") html = rRelatorios();
   else if(S.tab === "config") html = rConfig();
   else html = rDashboard();
@@ -2569,6 +2812,10 @@ function ativarListenerSobDemanda(tab){
   if(tab==="pessoas" || tab==="folha"){
     ligar("funcionarios","funcionarios",["empresaId","==",EMPRESA_ID]);
     ligar("folhas","folhas",["empresaId","==",EMPRESA_ID]);
+  }
+  if(tab==="marketing"){
+    ligar("campanhas","campanhas",["empresaId","==",EMPRESA_ID]);
+    ligar("leads","leads",["empresaId","==",EMPRESA_ID]);
   }
   if(tab==="dashboard"){
     ligar("folhas","folhas",["empresaId","==",EMPRESA_ID]);
