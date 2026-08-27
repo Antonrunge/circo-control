@@ -594,6 +594,8 @@
     </div>
     <div class="field"><label>Banco</label><input id="ffBanco" placeholder="Opcional"></div>
     <div class="field"><label>Chave PIX</label><input id="ffPix" placeholder="Opcional"></div>
+    <div class="field"><label>Saldo devedor inicial (opcional)</label><input type="number" id="ffSaldoInicial" min="0" step="0.01" placeholder="0,00"></div>
+    <div class="setupNote" style="margin:-.6rem 0 .9rem;">Use se esse funcionário já vem de uma dívida de antes de usar o sistema (ex: controle antigo em planilha). Esse valor entra na conta de "Saldo a receber".</div>
     <div class="field" style="display:flex;align-items:center;gap:.5rem;">
       <input type="checkbox" id="ffAtivo" style="width:auto;"><label style="margin:0;">Funcionário ativo</label>
     </div>
@@ -621,6 +623,23 @@
     <div class="modalActions">
       <button class="btn secondary" style="width:auto" id="btnCancelarFolha">Cancelar</button>
       <button class="btnSmall" id="btnSalvarFolha">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: GERAR SEMANAS DE FOLHA ============ -->
+<div class="modalOverlay" id="modalGerarSemanas">
+  <div class="modalBox">
+    <h3>Gerar semanas de folha</h3>
+    <div class="setupNote" style="margin-bottom:1rem;">Cria de uma vez várias semanas seguidas pra um funcionário — pra não precisar cadastrar semana por semana, igual uma planilha anual. Cada semana entra como um lançamento pendente, com vencimento na data escolhida.</div>
+    <div class="field"><label>Funcionário</label><select id="fgsFuncionario"></select></div>
+    <div class="field"><label>Temporada (opcional)</label><select id="fgsTemporada"></select></div>
+    <div class="field"><label>Vencimento da 1ª semana</label><input type="date" id="fgsDataInicial"></div>
+    <div class="field"><label>Valor por semana</label><input type="number" id="fgsValorSemana" min="0" step="0.01"></div>
+    <div class="field"><label>Quantas semanas gerar</label><input type="number" id="fgsQuantidade" min="1" max="52" step="1" value="4"></div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarGerarSemanas">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarGerarSemanas">Gerar</button>
     </div>
   </div>
 </div>
@@ -1164,12 +1183,16 @@ function saldoRestanteFolha(f){
   return Math.max(0, (f.totalPagar||0) - valorPagoFolha(f));
 }
 // Soma, pra um funcionário específico, tudo que a empresa ainda deve dele — de folhas já
-// aprovadas mas ainda não pagas, ou pagas só parcialmente. Usado em Pessoas e em Folha,
-// pra sempre mostrar o mesmo número nos dois lugares.
+// aprovadas mas ainda não pagas, ou pagas só parcialmente, mais um eventual saldo devedor
+// inicial (dívida trazida de um controle anterior, ex: planilha). Usado em Pessoas e em
+// Folha, pra sempre mostrar o mesmo número nos dois lugares.
 function creditoAcumuladoFuncionario(funcionarioId){
-  return S.folhas
+  var f0 = S.funcionarios.find(function(x){return x.id===funcionarioId;});
+  var inicial = (f0 && f0.saldoInicial) || 0;
+  var dasFolhas = S.folhas
     .filter(function(f){return f.funcionarioId===funcionarioId && (f.status==="parcial" || f.status==="aprovado");})
     .reduce(function(a,f){return a+saldoRestanteFolha(f);},0);
+  return inicial + dasFolhas;
 }
 
 function calcularDespesas(dias){
@@ -2412,7 +2435,9 @@ function rFolha(){
   }
   html += '</div></div>';
 
-  html += '<div class="panel"><div class="panelHead"><h3>Lançamentos de folha</h3><button class="btnSmall" data-abrir-folha="nova">+ Nova folha</button></div><div class="panelBody">';
+  html += '<div class="panel"><div class="panelHead"><h3>Lançamentos de folha</h3><div style="display:flex;gap:.5rem;">'
+    + '<button class="btnSmall ghost" data-abrir-gerar-semanas="1">+ Gerar semanas</button>'
+    + '<button class="btnSmall" data-abrir-folha="nova">+ Nova folha</button></div></div><div class="panelBody">';
   if(S.funcionarios.length===0){
     html += '<div class="emptyState">Cadastre funcionários em <strong>Pessoas</strong> antes de lançar a folha.</div>';
   } else if(S.folhas.length===0){
@@ -3111,6 +3136,7 @@ function abrirModalFuncionario(id){
   document.getElementById("ffPeriodicidade").value = f ? f.periodicidade : "semanal";
   document.getElementById("ffBanco").value = f ? f.banco : "";
   document.getElementById("ffPix").value = f ? f.pix : "";
+  document.getElementById("ffSaldoInicial").value = f ? (f.saldoInicial||"") : "";
   document.getElementById("ffAtivo").checked = f ? (f.ativo!==false) : true;
   document.getElementById("modalFuncionario").classList.add("show");
 }
@@ -3129,6 +3155,7 @@ function salvarFuncionario(){
     periodicidade: document.getElementById("ffPeriodicidade").value,
     banco: document.getElementById("ffBanco").value.trim(),
     pix: document.getElementById("ffPix").value.trim(),
+    saldoInicial: Number(document.getElementById("ffSaldoInicial").value)||0,
     ativo: document.getElementById("ffAtivo").checked,
     empresaId: EMPRESA_ID
   };
@@ -3176,6 +3203,63 @@ function salvarFolha(){
     empresaId: EMPRESA_ID
   };
   db.collection("folhas").doc().set(dados).then(fecharModalFolha).catch(function(err){ alert("Erro ao salvar: "+err.message); });
+}
+
+// Soma dias a uma data no formato "AAAA-MM-DD", devolvendo outra data no mesmo formato.
+function somarDiasIso(dataIso, dias){
+  var d = new Date(dataIso+"T00:00:00");
+  d.setDate(d.getDate()+dias);
+  return d.toISOString().slice(0,10);
+}
+// "AAAA-MM-DD" -> "DD/MM", pra montar o texto do período (ex: "18/08 a 24/08").
+function ddmm(dataIso){
+  var partes = dataIso.split("-");
+  return partes[2]+"/"+partes[1];
+}
+
+/* ---------- Gerar várias semanas de folha de uma vez (substitui digitar semana por semana) ---------- */
+function abrirModalGerarSemanas(){
+  var ativos = S.funcionarios.filter(function(f){return f.ativo!==false;});
+  var selFunc = document.getElementById("fgsFuncionario");
+  selFunc.innerHTML = ativos.map(function(f){return '<option value="'+es(f.id)+'" data-valor="'+f.valor+'">'+es(f.nome)+' — '+es(f.funcao)+'</option>';}).join("");
+  var selTemp = document.getElementById("fgsTemporada");
+  selTemp.innerHTML = '<option value="">Nenhuma</option>' + S.temporadas.map(function(t){return '<option value="'+es(t.id)+'">'+es(t.nome)+' — '+es(t.cidade)+'</option>';}).join("");
+  document.getElementById("fgsDataInicial").value = hj();
+  document.getElementById("fgsValorSemana").value = ativos[0] ? ativos[0].valor : "";
+  document.getElementById("fgsQuantidade").value = "4";
+  document.getElementById("modalGerarSemanas").classList.add("show");
+}
+function fecharModalGerarSemanas(){ document.getElementById("modalGerarSemanas").classList.remove("show"); }
+function preencherValorGerarSemanas(){
+  var opt = document.getElementById("fgsFuncionario").selectedOptions[0];
+  if(opt){ document.getElementById("fgsValorSemana").value = opt.dataset.valor || 0; }
+}
+function gerarSemanasFolha(){
+  var funcionarioId = document.getElementById("fgsFuncionario").value;
+  var temporadaId = document.getElementById("fgsTemporada").value || null;
+  var dataInicial = document.getElementById("fgsDataInicial").value;
+  var valorSemana = Number(document.getElementById("fgsValorSemana").value)||0;
+  var quantidade = Math.max(1, Math.min(52, Number(document.getElementById("fgsQuantidade").value)||0));
+  if(!funcionarioId || !dataInicial || !valorSemana){ alert("Selecione o funcionário, a data e o valor da semana."); return; }
+  var lote = db.batch();
+  for(var i=0; i<quantidade; i++){
+    var vencimento = somarDiasIso(dataInicial, i*7);
+    var fimSemana = somarDiasIso(vencimento, 6);
+    lote.set(db.collection("folhas").doc(), {
+      funcionarioId: funcionarioId,
+      tipo: "semanal",
+      periodo: ddmm(vencimento)+" a "+ddmm(fimSemana),
+      dataReferencia: vencimento,
+      temporadaId: temporadaId,
+      valorBase: valorSemana,
+      adicionais: 0,
+      descontos: 0,
+      totalPagar: valorSemana,
+      status: "pendente",
+      empresaId: EMPRESA_ID
+    });
+  }
+  lote.commit().then(fecharModalGerarSemanas).catch(function(err){ alert("Erro ao gerar semanas: "+err.message); });
 }
 function aprovarFolha(id){
   db.collection("folhas").doc(id).update({status:"aprovado"}).catch(function(err){ alert("Erro: "+err.message); });
@@ -3381,6 +3465,10 @@ document.addEventListener("click", function(e){
   if(e.target.id === "btnSalvarFolha"){ salvarFolha(); return; }
   if((el = e.target.closest("[data-aprovar-folha]"))){ aprovarFolha(el.dataset.aprovarFolha); return; }
 
+  if((el = e.target.closest("[data-abrir-gerar-semanas]"))){ abrirModalGerarSemanas(); return; }
+  if(e.target.id === "btnCancelarGerarSemanas"){ fecharModalGerarSemanas(); return; }
+  if(e.target.id === "btnSalvarGerarSemanas"){ gerarSemanasFolha(); return; }
+
   if((el = e.target.closest("[data-abrir-campanha]"))){ abrirModalCampanha(el.dataset.abrirCampanha); return; }
   if(e.target.id === "btnCancelarCampanha"){ fecharModalCampanha(); return; }
   if(e.target.id === "btnSalvarCampanha"){ salvarCampanha(); return; }
@@ -3415,6 +3503,7 @@ document.addEventListener("change", function(e){
     return;
   }
   if(e.target.id === "ffoFuncionario"){ preencherValorBaseFolha(); return; }
+  if(e.target.id === "fgsFuncionario"){ preencherValorGerarSemanas(); return; }
 });
 
 // Campos de texto/número são gravados a cada tecla, sem esperar "change" (blur),
