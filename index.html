@@ -265,10 +265,16 @@
   .modalOverlay.show{display:flex;}
   .modalBox{
     background:var(--paper);border-radius:10px;max-width:420px;width:100%;
+    max-height:88vh;overflow-y:auto;
     padding:1.6rem;box-shadow:0 8px 30px rgba(0,0,0,.2);
+    display:flex;flex-direction:column;
   }
   .modalBox h3{margin:0 0 1.1rem;}
   .modalBox .field{margin-bottom:.9rem;}
+  .modalBox .modalActions{
+    position:sticky;bottom:-1.6rem;margin:1.2rem -1.6rem -1.6rem;
+    background:var(--paper);padding:1rem 1.6rem;border-top:1px solid var(--rule);
+  }
   .modalBox select{
     width:100%;padding:.6rem .7rem;border:1px solid var(--rule);border-radius:6px;background:var(--bg);
   }
@@ -824,6 +830,42 @@
   </div>
 </div>
 
+<!-- ============ MODAL: REGISTRAR PAGAMENTO (conta a pagar ou folha) ============ -->
+<div class="modalOverlay" id="modalPagamento">
+  <div class="modalBox">
+    <h3 id="modalPagamentoTitulo">Registrar pagamento</h3>
+    <div class="setupNote" id="modalPagamentoSaldo" style="margin-bottom:1rem;"></div>
+    <div class="field"><label>Valor pago agora (R$)</label><input type="number" id="fpgValor" min="0" step="0.01" placeholder="0,00"></div>
+    <div class="field">
+      <label>Forma de pagamento</label>
+      <select id="fpgForma">
+        <option value="pix">Pix</option>
+        <option value="cartao">Cartão</option>
+        <option value="dinheiro">Dinheiro</option>
+        <option value="transferencia">Transferência</option>
+      </select>
+    </div>
+    <div class="field"><label>Data do pagamento</label><input type="date" id="fpgData"></div>
+    <div class="field"><label>Observações</label><textarea id="fpgObs" rows="2" placeholder="Ex: pagamento parcial, restante fica pra próxima semana"></textarea></div>
+    <div class="setupNote" style="margin-bottom:.5rem;">Se o valor pago for menor que o total, a diferença fica registrada como saldo em aberto (crédito do funcionário ou do fornecedor).</div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnCancelarPagamento">Cancelar</button>
+      <button class="btnSmall" id="btnSalvarPagamento">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: HISTÓRICO DE PAGAMENTO ============ -->
+<div class="modalOverlay" id="modalHistorico">
+  <div class="modalBox">
+    <h3 id="modalHistoricoTitulo">Histórico de pagamento</h3>
+    <div id="modalHistoricoCorpo"></div>
+    <div class="modalActions">
+      <button class="btn secondary" style="width:auto" id="btnFecharHistorico">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -897,6 +939,7 @@ var CATEGORIA_DESPESA = ["Aluguel","Transporte","Combustível","Publicidade","Sa
 
 var CONTA_PAGAR_STATUS = {
   pendente: {txt:"Pendente", cls:"yellow"},
+  parcial:  {txt:"Parcial", cls:"yellow"},
   pago:     {txt:"Pago", cls:"green"},
   vencido:  {txt:"Vencido", cls:"red"}
 };
@@ -916,6 +959,7 @@ var TIPO_VINCULO = ["CLT","Diarista","Cachê","Prestador de serviço","Temporár
 var FOLHA_STATUS = {
   pendente: {txt:"Pendente", cls:"yellow"},
   aprovado: {txt:"Aprovado", cls:"gray"},
+  parcial:  {txt:"Parcial", cls:"yellow"},
   pago:     {txt:"Pago", cls:"green"}
 };
 
@@ -982,6 +1026,7 @@ var S = {
   contasReceber: [],
   editandoContaPagarId: null,
   editandoContaReceberId: null,
+  pagamentoAlvo: null, // {tipo:"conta"|"folha", id} — alvo do modal de registrar pagamento/histórico
   temporadaFiltroFinanceiro: "", // "" = todas as temporadas no DRE/relatórios
 
   // Fase 4 — Locais e Relatórios/BI
@@ -1082,11 +1127,51 @@ function calcularFaturamento(dias){
   var totalPdv = vendasOk.reduce(function(acc,v){return acc+(v.total||0);},0);
   return totalIngressos+totalPdv;
 }
+// Pagamentos parciais — uma conta a pagar pode ser quitada aos poucos. Cada pagamento fica
+// registrado em c.pagamentos:[{valor,data,forma,obs}]. Contas antigas (de antes desse recurso)
+// não têm esse array — nesse caso, se já estavam marcadas "pago", tratamos como um único
+// pagamento integral, pra não perder nada do histórico já existente.
+function pagamentosContaPagar(c){
+  if(Array.isArray(c.pagamentos) && c.pagamentos.length>0) return c.pagamentos;
+  if(c.status==="pago") return [{valor:c.valor||0, data:c.pagoEm||c.vencimento, forma:c.formaPagamento||"", obs:""}];
+  return [];
+}
+function valorPagoConta(c){
+  return pagamentosContaPagar(c).reduce(function(a,p){return a+(p.valor||0);},0);
+}
+function saldoRestanteConta(c){
+  return Math.max(0, (c.valor||0) - valorPagoConta(c));
+}
+function statusContaPagar(c){
+  var pago = valorPagoConta(c);
+  if(pago >= (c.valor||0) - 0.005 && (c.valor||0) > 0) return "pago";
+  if(pago > 0) return "parcial";
+  if(c.vencimento && c.vencimento < hj()) return "vencido";
+  return "pendente";
+}
+
+// Folha de pagamento — mesmo princípio: f.pagamentos:[{valor,data,forma,obs}], com o mesmo
+// fallback pra lançamentos antigos já marcados "pago" sem o array.
+function pagamentosFolha(f){
+  if(Array.isArray(f.pagamentos) && f.pagamentos.length>0) return f.pagamentos;
+  if(f.status==="pago") return [{valor:f.totalPagar||0, data:f.pagoEm||f.dataReferencia, forma:f.formaPagamento||"", obs:""}];
+  return [];
+}
+function valorPagoFolha(f){
+  return pagamentosFolha(f).reduce(function(a,p){return a+(p.valor||0);},0);
+}
+function saldoRestanteFolha(f){
+  return Math.max(0, (f.totalPagar||0) - valorPagoFolha(f));
+}
+
 function calcularDespesas(dias){
-  return S.contasPagar.filter(function(c){
-    if(c.status!=="pago") return false;
-    return dias===null ? true : diasAtras(c.pagoEm||c.vencimento) <= dias;
-  }).reduce(function(acc,c){return acc+(c.valor||0);},0);
+  var total = 0;
+  S.contasPagar.forEach(function(c){
+    pagamentosContaPagar(c).forEach(function(p){
+      if(dias===null || diasAtras(p.data) <= dias) total += (p.valor||0);
+    });
+  });
+  return total;
 }
 
 // Resultado financeiro completo de uma temporada — usado em Relatórios, comparação entre
@@ -1095,12 +1180,12 @@ function temporadaResultado(temporadaId){
   var ingressosT = S.ingressos.filter(function(i){return i.temporadaId===temporadaId && i.status!=="cancelado";});
   var vendasT = S.vendasPdv.filter(function(v){return v.temporadaId===temporadaId;});
   var receberT = S.contasReceber.filter(function(c){return c.temporadaId===temporadaId && c.status==="recebido";});
-  var pagarT = S.contasPagar.filter(function(c){return c.temporadaId===temporadaId && c.status==="pago";});
+  var pagarT = S.contasPagar.filter(function(c){return c.temporadaId===temporadaId;});
   var receitaBilheteria = ingressosT.reduce(function(a,i){return a+(i.precoUnit||0);},0);
   var receitaAlimentacao = vendasT.reduce(function(a,v){return a+(v.total||0);},0);
   var receitaOutras = receberT.reduce(function(a,c){return a+(c.valor||0);},0);
   var receita = receitaBilheteria+receitaAlimentacao+receitaOutras;
-  var despesa = pagarT.reduce(function(a,c){return a+(c.valor||0);},0);
+  var despesa = pagarT.reduce(function(a,c){return a+valorPagoConta(c);},0);
   return {
     receita: receita, despesa: despesa, resultado: receita-despesa,
     receitaBilheteria: receitaBilheteria, receitaAlimentacao: receitaAlimentacao, receitaOutras: receitaOutras,
@@ -1197,10 +1282,11 @@ function receitaPorModulo(dias){
 function despesasPorCategoria(dias){
   var mapa = {};
   S.contasPagar.forEach(function(c){
-    if(c.status!=="pago") return;
-    if(dias!==null && diasAtras(c.pagoEm||c.vencimento) > dias) return;
     var cat = c.categoria || "Outros";
-    mapa[cat] = (mapa[cat]||0) + (c.valor||0);
+    pagamentosContaPagar(c).forEach(function(p){
+      if(dias!==null && diasAtras(p.data) > dias) return;
+      mapa[cat] = (mapa[cat]||0) + (p.valor||0);
+    });
   });
   var lista = Object.keys(mapa).map(function(k){return {categoria:k, valor:mapa[k]};});
   lista.sort(function(a,b){return b.valor-a.valor;});
@@ -1529,7 +1615,7 @@ function ocupacaoSessoesTemporada(temporadaId, limite){
 
 // Bilheteria: vendas por forma de pagamento, na temporada selecionada.
 var COR_PAGAMENTO = {pix:"#2563a8", cartao:"#6d4aa8", dinheiro:"#0f8a72"};
-var PAGAMENTO_LABEL = {pix:"Pix", cartao:"Cartão", dinheiro:"Dinheiro"};
+var PAGAMENTO_LABEL = {pix:"Pix", cartao:"Cartão", dinheiro:"Dinheiro", transferencia:"Transferência"};
 function graficoFormaPagamento(temporadaId){
   var ingressosOk = S.ingressos.filter(function(i){return i.status!=="cancelado" && (!temporadaId || i.temporadaId===temporadaId);});
   var mapa = {};
@@ -1567,10 +1653,10 @@ function graficoEstoqueAtual(){
 function despesasPorCategoriaTemporada(temporadaId){
   var mapa = {};
   S.contasPagar.forEach(function(c){
-    if(c.status!=="pago") return;
     if(temporadaId && c.temporadaId!==temporadaId) return;
     var cat = c.categoria || "Outros";
-    mapa[cat] = (mapa[cat]||0) + (c.valor||0);
+    var pago = valorPagoConta(c);
+    if(pago>0) mapa[cat] = (mapa[cat]||0) + pago;
   });
   var lista = Object.keys(mapa).map(function(k){return {categoria:k, valor:mapa[k]};});
   lista.sort(function(a,b){return b.valor-a.valor;});
@@ -1597,9 +1683,9 @@ function graficoEquipePorSetor(){
 
 // Folha: valor total por status (pendente/aprovado/pago).
 function graficoFolhaStatus(){
-  var mapa = {pendente:0, aprovado:0, pago:0};
+  var mapa = {pendente:0, aprovado:0, parcial:0, pago:0};
   S.folhas.forEach(function(f){ mapa[f.status] = (mapa[f.status]||0) + (f.totalPagar||0); });
-  var cores = {pendente:"var(--yellow)", aprovado:COR_CATEGORIA_RESTANTE, pago:"var(--green)"};
+  var cores = {pendente:"var(--yellow)", aprovado:COR_CATEGORIA_RESTANTE, parcial:"var(--yellow)", pago:"var(--green)"};
   var segmentos = Object.keys(mapa).filter(function(k){return mapa[k]>0;}).map(function(k){
     return {label:(FOLHA_STATUS[k]||{}).txt||k, valor:mapa[k], cor:cores[k]};
   });
@@ -1633,8 +1719,8 @@ function rDashboard(){
   var resultadoMes = faturamentoMes - despesaMes;
 
   var hoje = hj();
-  var contasVencidas = S.contasPagar.filter(function(c){return c.status==="pendente" && c.vencimento && c.vencimento<hoje;});
-  var contasAVencer = S.contasPagar.filter(function(c){return c.status==="pendente" && c.vencimento && c.vencimento>=hoje && diasAtras(c.vencimento) >= -7;});
+  var contasVencidas = S.contasPagar.filter(function(c){return saldoRestanteConta(c)>0 && c.vencimento && c.vencimento<hoje;});
+  var contasAVencer = S.contasPagar.filter(function(c){return saldoRestanteConta(c)>0 && c.vencimento && c.vencimento>=hoje && diasAtras(c.vencimento) >= -7;});
 
   // Comparação honesta com o período anterior: usa os mesmos 14 dias que já alimentam o gráfico de
   // faturamento (7 dias mais recentes vs os 7 dias antes deles) — nunca inventa uma tendência sem dado real.
@@ -1891,9 +1977,10 @@ function rBilheteria(){
   if(ingressosDaTemporada.length===0){
     html += '<div class="emptyState">Nenhum ingresso vendido ainda nesta temporada.</div>';
   } else {
-    html += '<table class="list"><thead><tr><th>Código</th><th>Tipo</th><th>Cliente</th><th>Pagamento</th><th>Status</th></tr></thead><tbody>';
+    html += '<table class="list"><thead><tr><th>Código</th><th>Tipo</th><th>Cliente</th><th>Pagamento</th><th>Status</th><th></th></tr></thead><tbody>';
     ingressosDaTemporada.slice(0,30).forEach(function(i){
-      html += '<tr><td><span class="qrCodeBox">'+es(i.qrCode)+'</span></td><td>'+es(i.tipoNome)+'</td><td>'+es(i.clienteNome||"—")+'</td><td>'+es(i.formaPagamento)+'</td><td>'+statusIngressoPill(i.status)+'</td></tr>';
+      var acao = (i.status==="valido") ? '<button class="btnSmall ghost" data-cancelar-ingresso="'+es(i.id)+'">Cancelar</button>' : "";
+      html += '<tr><td><span class="qrCodeBox">'+es(i.qrCode)+'</span></td><td>'+es(i.tipoNome)+'</td><td>'+es(i.clienteNome||"—")+'</td><td>'+es(i.formaPagamento)+'</td><td>'+statusIngressoPill(i.status)+'</td><td>'+acao+'</td></tr>';
     });
     html += '</tbody></table>';
   }
@@ -2024,7 +2111,10 @@ function rFinanceiro(){
   if(S.centrosCusto.length===0){
     html += '<div class="emptyState">Nenhum centro de custo cadastrado (ex: Bilheteria, Alimentação, Equipe, Transporte).</div>';
   } else {
-    html += '<div class="pill-row" style="display:flex;flex-wrap:wrap;gap:.5rem;">' + S.centrosCusto.map(function(c){return '<span class="statusPill gray">'+es(c.nome)+'</span>';}).join('') + '</div>';
+    html += '<div class="setupNote" style="margin-bottom:1rem;">Clique num centro de custo pra lançar um gasto direto nele.</div>';
+    html += '<div class="pill-row" style="display:flex;flex-wrap:wrap;gap:.5rem;">' + S.centrosCusto.map(function(c){
+      return '<button class="btnSmall ghost" data-lancar-gasto-centro="'+es(c.id)+'">+ '+es(c.nome)+'</button>';
+    }).join('') + '</div>';
   }
   html += '</div></div>';
 
@@ -2036,11 +2126,16 @@ function rFinanceiro(){
   } else {
     html += '<table class="list"><thead><tr><th>Descrição</th><th>Categoria</th><th>Centro de custo</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody>';
     pagarOrdenadas.forEach(function(c){
-      var statusReal = (c.status==="pendente" && c.vencimento && c.vencimento<hj()) ? "vencido" : c.status;
+      var statusReal = statusContaPagar(c);
       var s = CONTA_PAGAR_STATUS[statusReal] || CONTA_PAGAR_STATUS.pendente;
-      html += '<tr><td>'+es(c.descricao)+'</td><td>'+es(c.categoria)+'</td><td>'+es(centroCustoNome(c.centroCustoId))+'</td><td>'+fdt(c.vencimento)+'</td><td>'+fmt(c.valor)+'</td>'
+      var pago = valorPagoConta(c);
+      var descricaoCel = es(c.descricao) + (pago>0 ? '<div class="setupNote" style="margin:.2rem 0 0;">Pago '+fmt(pago)+' de '+fmt(c.valor)+'</div>' : '');
+      var acoes = '';
+      if(statusReal!=="pago"){ acoes += '<button class="btnSmall ghost" data-abrir-pagamento="conta:'+es(c.id)+'">Registrar pagamento</button>'; }
+      if(pago>0){ acoes += ' <button class="btnSmall ghost" data-abrir-historico="conta:'+es(c.id)+'">Histórico</button>'; }
+      html += '<tr><td>'+descricaoCel+'</td><td>'+es(c.categoria)+'</td><td>'+es(centroCustoNome(c.centroCustoId))+'</td><td>'+fdt(c.vencimento)+'</td><td>'+fmt(c.valor)+'</td>'
         + '<td><span class="statusPill '+s.cls+'">'+s.txt+'</span></td>'
-        + '<td>'+(c.status==="pendente" ? '<button class="btnSmall ghost" data-marcar-pago="'+es(c.id)+'">Marcar pago</button>' : '')+'</td></tr>';
+        + '<td>'+acoes+'</td></tr>';
     });
     html += '</tbody></table>';
   }
@@ -2074,7 +2169,7 @@ function rFinanceiro(){
   });
   html += '</tbody></table>';
   var previstoReceber = S.contasReceber.filter(function(c){return c.status==="previsto";}).reduce(function(a,c){return a+c.valor;},0);
-  var previstoPagar = S.contasPagar.filter(function(c){return c.status==="pendente";}).reduce(function(a,c){return a+c.valor;},0);
+  var previstoPagar = S.contasPagar.reduce(function(a,c){return a+saldoRestanteConta(c);},0);
   html += '<div class="setupNote" style="margin-top:1rem;">Previsto (ainda não realizado): a receber <strong>'+fmt(previstoReceber)+'</strong> · a pagar <strong>'+fmt(previstoPagar)+'</strong>.</div>';
   html += '</div></div>';
 
@@ -2085,12 +2180,12 @@ function rFinanceiro(){
   var ingressosT = S.ingressos.filter(function(i){return i.status!=="cancelado" && (!filtroT || i.temporadaId===filtroT);});
   var vendasT = S.vendasPdv.filter(function(v){return !filtroT || v.temporadaId===filtroT;});
   var receberT = S.contasReceber.filter(function(c){return c.status==="recebido" && (!filtroT || c.temporadaId===filtroT);});
-  var pagarT = S.contasPagar.filter(function(c){return c.status==="pago" && (!filtroT || c.temporadaId===filtroT);});
+  var pagarT = S.contasPagar.filter(function(c){return (!filtroT || c.temporadaId===filtroT);});
   var receitaBilheteria = ingressosT.reduce(function(a,i){return a+(i.precoUnit||0);},0);
   var receitaAlimentacao = vendasT.reduce(function(a,v){return a+(v.total||0);},0);
   var receitaOutras = receberT.reduce(function(a,c){return a+(c.valor||0);},0);
   var receitaBruta = receitaBilheteria+receitaAlimentacao+receitaOutras;
-  var despesaTotal = pagarT.reduce(function(a,c){return a+(c.valor||0);},0);
+  var despesaTotal = pagarT.reduce(function(a,c){return a+valorPagoConta(c);},0);
   var resultado = receitaBruta-despesaTotal;
   html += '<table class="list"><tbody>'
     + '<tr><td>Receita — Bilheteria</td><td style="text-align:right">'+fmt(receitaBilheteria)+'</td></tr>'
@@ -2288,12 +2383,37 @@ function rFolha(){
     html += '<table class="list"><thead><tr><th>Funcionário</th><th>Tipo</th><th>Período</th><th>Base</th><th>Adicionais</th><th>Descontos</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>';
     ordenadas.forEach(function(f){
       var s = FOLHA_STATUS[f.status] || FOLHA_STATUS.pendente;
+      var pago = valorPagoFolha(f);
       var acao = "";
       if(f.status==="pendente") acao = '<button class="btnSmall ghost" data-aprovar-folha="'+es(f.id)+'">Aprovar</button>';
-      else if(f.status==="aprovado") acao = '<button class="btnSmall ghost" data-pagar-folha="'+es(f.id)+'">Marcar pago</button>';
+      else if(f.status==="aprovado" || f.status==="parcial") acao = '<button class="btnSmall ghost" data-abrir-pagamento="folha:'+es(f.id)+'">Registrar pagamento</button>';
+      if(pago>0){ acao += ' <button class="btnSmall ghost" data-abrir-historico="folha:'+es(f.id)+'">Histórico</button>'; }
+      var totalCel = '<strong>'+fmt(f.totalPagar)+'</strong>' + (pago>0 ? '<div class="setupNote" style="margin:.2rem 0 0;">Pago '+fmt(pago)+'</div>' : '');
       html += '<tr><td>'+es(funcionarioNome(f.funcionarioId))+'</td><td>'+(f.tipo==="semanal"?"Semanal":"Mensal")+'</td><td>'+es(f.periodo)+'</td>'
-        + '<td>'+fmt(f.valorBase)+'</td><td>'+fmt(f.adicionais)+'</td><td>-'+fmt(f.descontos)+'</td><td><strong>'+fmt(f.totalPagar)+'</strong></td>'
+        + '<td>'+fmt(f.valorBase)+'</td><td>'+fmt(f.adicionais)+'</td><td>-'+fmt(f.descontos)+'</td><td>'+totalCel+'</td>'
         + '<td><span class="statusPill '+s.cls+'">'+s.txt+'</span></td><td>'+acao+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+
+  // ---- Créditos com a equipe (saldo que a empresa ainda deve por pagamentos parciais/pendentes já aprovados) ----
+  var creditos = {};
+  S.folhas.forEach(function(f){
+    if(f.status==="parcial" || f.status==="aprovado"){
+      var saldo = saldoRestanteFolha(f);
+      if(saldo>0.004){ creditos[f.funcionarioId] = (creditos[f.funcionarioId]||0) + saldo; }
+    }
+  });
+  var chavesCredito = Object.keys(creditos);
+  html += '<div class="panel"><div class="panelHead"><h3>Créditos com a equipe</h3></div><div class="panelBody">';
+  if(chavesCredito.length===0){
+    html += '<div class="emptyState">Nenhum funcionário com saldo a receber da empresa no momento.</div>';
+  } else {
+    html += '<div class="setupNote" style="margin-bottom:1rem;">Valor que a empresa ainda deve a cada funcionário — de folhas aprovadas ainda não pagas ou pagas só parcialmente.</div>';
+    html += '<table class="list"><thead><tr><th>Funcionário</th><th>Saldo a receber</th></tr></thead><tbody>';
+    chavesCredito.sort(function(a,b){return creditos[b]-creditos[a];}).forEach(function(fid){
+      html += '<tr><td>'+es(funcionarioNome(fid))+'</td><td><strong>'+fmt(creditos[fid])+'</strong></td></tr>';
     });
     html += '</tbody></table>';
   }
@@ -2614,6 +2734,14 @@ function validarIngresso(){
   }).catch(function(err){ alert("Erro ao validar: "+err.message); });
 }
 
+// Cancela um ingresso (ex: venda de teste, engano no cadastro). Não apaga o registro — só marca
+// como cancelado, pra manter o histórico e sair automaticamente de todas as somas de faturamento.
+function cancelarIngresso(id){
+  if(!confirm("Cancelar este ingresso? Ele sai do faturamento e da contagem de público, mas continua no histórico.")) return;
+  db.collection("ingressos").doc(id).update({status:"cancelado", canceladoEm:new Date().toISOString()})
+    .catch(function(err){ alert("Erro ao cancelar: "+err.message); });
+}
+
 /* ---------- Produtos (Alimentação) ---------- */
 function abrirModalProduto(id){
   S.editandoProdutoId = (id==="novo") ? null : id;
@@ -2734,7 +2862,7 @@ function salvarCentroCusto(){
 }
 
 /* ---------- Contas a pagar ---------- */
-function abrirModalContaPagar(id){
+function abrirModalContaPagar(id, presetCentroCustoId){
   S.editandoContaPagarId = (id==="nova") ? null : id;
   var c = S.editandoContaPagarId ? S.contasPagar.find(function(x){return x.id===S.editandoContaPagarId;}) : null;
   document.getElementById("fcpCategoria").innerHTML = CATEGORIA_DESPESA.map(function(cat){return '<option value="'+cat+'">'+cat+'</option>';}).join("");
@@ -2745,7 +2873,7 @@ function abrirModalContaPagar(id){
   document.getElementById("modalContaPagarTitulo").textContent = c ? "Editar conta a pagar" : "Nova conta a pagar";
   document.getElementById("fcpDescricao").value = c ? c.descricao : "";
   document.getElementById("fcpCategoria").value = c ? c.categoria : CATEGORIA_DESPESA[0];
-  selCentro.value = c ? (c.centroCustoId||"") : "";
+  selCentro.value = c ? (c.centroCustoId||"") : (presetCentroCustoId||"");
   selTemp.value = c ? (c.temporadaId||"") : (S.temporadaFiltro||"");
   document.getElementById("fcpVencimento").value = c ? c.vencimento : "";
   document.getElementById("fcpValor").value = c ? c.valor : "";
@@ -2770,10 +2898,114 @@ function salvarContaPagar(){
   var ref = S.editandoContaPagarId ? db.collection("contasPagar").doc(S.editandoContaPagarId) : db.collection("contasPagar").doc();
   ref.set(dados, {merge:true}).then(fecharModalContaPagar).catch(function(err){ alert("Erro ao salvar: "+err.message); });
 }
-function marcarContaPagarPaga(id){
-  db.collection("contasPagar").doc(id).update({status:"pago", pagoEm:new Date().toISOString()})
-    .catch(function(err){ alert("Erro: "+err.message); });
+
+/* ---------- Pagamentos (parciais) de conta a pagar e de folha ---------- */
+function abrirModalPagamento(tipo, id){
+  S.pagamentoAlvo = {tipo:tipo, id:id};
+  var saldo, titulo;
+  if(tipo==="folha"){
+    var f = S.folhas.find(function(x){return x.id===id;});
+    if(!f) return;
+    saldo = saldoRestanteFolha(f);
+    titulo = "Registrar pagamento — "+funcionarioNome(f.funcionarioId)+" ("+f.periodo+")";
+  } else {
+    var c = S.contasPagar.find(function(x){return x.id===id;});
+    if(!c) return;
+    saldo = saldoRestanteConta(c);
+    titulo = "Registrar pagamento — "+c.descricao;
+  }
+  document.getElementById("modalPagamentoTitulo").textContent = titulo;
+  document.getElementById("modalPagamentoSaldo").textContent = "Saldo em aberto: "+fmt(saldo);
+  document.getElementById("fpgValor").value = saldo.toFixed(2);
+  document.getElementById("fpgForma").value = "pix";
+  document.getElementById("fpgData").value = hj();
+  document.getElementById("fpgObs").value = "";
+  document.getElementById("modalPagamento").classList.add("show");
 }
+function fecharModalPagamento(){ document.getElementById("modalPagamento").classList.remove("show"); }
+function salvarPagamento(){
+  var alvo = S.pagamentoAlvo;
+  if(!alvo) return;
+  var valor = Number(document.getElementById("fpgValor").value);
+  var forma = document.getElementById("fpgForma").value;
+  var data = document.getElementById("fpgData").value || hj();
+  var obs = document.getElementById("fpgObs").value.trim();
+  if(!valor || valor<=0){ alert("Informe um valor de pagamento maior que zero."); return; }
+
+  if(alvo.tipo==="folha"){
+    var f = S.folhas.find(function(x){return x.id===alvo.id;});
+    if(!f) return;
+    var pagamentosAtualizados = pagamentosFolha(f).concat([{valor:valor, data:data, forma:forma, obs:obs}]);
+    var totalPagoNovo = pagamentosAtualizados.reduce(function(a,p){return a+(p.valor||0);},0);
+    var novoStatus = (totalPagoNovo >= (f.totalPagar||0) - 0.005) ? "pago" : "parcial";
+    var lote = db.batch();
+    lote.update(db.collection("folhas").doc(f.id), {
+      pagamentos: pagamentosAtualizados,
+      status: novoStatus,
+      pagoEm: novoStatus==="pago" ? new Date().toISOString() : (f.pagoEm||null)
+    });
+    // Regra de ouro: cada pagamento de folha (integral ou parcial) já lança a despesa
+    // correspondente no Financeiro, sem precisar cadastrar de novo.
+    lote.set(db.collection("contasPagar").doc(), {
+      descricao: "Folha — "+funcionarioNome(f.funcionarioId)+" ("+f.periodo+")"+(novoStatus==="parcial" ? " — pagamento parcial" : ""),
+      categoria: "Salários",
+      centroCustoId: null,
+      temporadaId: f.temporadaId || null,
+      vencimento: hj(),
+      valor: valor,
+      status: "pago",
+      pagoEm: data,
+      formaPagamento: forma,
+      observacao: obs,
+      origemFolhaId: f.id,
+      empresaId: EMPRESA_ID
+    });
+    lote.commit().then(fecharModalPagamento).catch(function(err){ alert("Erro: "+err.message); });
+  } else {
+    var c = S.contasPagar.find(function(x){return x.id===alvo.id;});
+    if(!c) return;
+    var pagamentosAtualizados2 = pagamentosContaPagar(c).concat([{valor:valor, data:data, forma:forma, obs:obs}]);
+    var totalPagoNovo2 = pagamentosAtualizados2.reduce(function(a,p){return a+(p.valor||0);},0);
+    var novoStatus2 = (totalPagoNovo2 >= (c.valor||0) - 0.005) ? "pago" : "parcial";
+    db.collection("contasPagar").doc(c.id).update({
+      pagamentos: pagamentosAtualizados2,
+      status: novoStatus2,
+      pagoEm: novoStatus2==="pago" ? new Date().toISOString() : (c.pagoEm||null)
+    }).then(fecharModalPagamento).catch(function(err){ alert("Erro: "+err.message); });
+  }
+}
+function abrirModalHistorico(tipo, id){
+  var pagamentos, titulo, valorTotal;
+  if(tipo==="folha"){
+    var f = S.folhas.find(function(x){return x.id===id;});
+    if(!f) return;
+    pagamentos = pagamentosFolha(f);
+    titulo = "Histórico de pagamento — "+funcionarioNome(f.funcionarioId)+" ("+f.periodo+")";
+    valorTotal = f.totalPagar||0;
+  } else {
+    var c = S.contasPagar.find(function(x){return x.id===id;});
+    if(!c) return;
+    pagamentos = pagamentosContaPagar(c);
+    titulo = "Histórico de pagamento — "+c.descricao;
+    valorTotal = c.valor||0;
+  }
+  document.getElementById("modalHistoricoTitulo").textContent = titulo;
+  var corpo = document.getElementById("modalHistoricoCorpo");
+  if(pagamentos.length===0){
+    corpo.innerHTML = '<div class="emptyState">Nenhum pagamento registrado ainda.</div>';
+  } else {
+    var totalPago = pagamentos.reduce(function(a,p){return a+(p.valor||0);},0);
+    var html = '<table class="list"><thead><tr><th>Data</th><th>Valor</th><th>Forma</th><th>Observação</th></tr></thead><tbody>';
+    pagamentos.slice().sort(function(a,b){return (a.data||"").localeCompare(b.data||"");}).forEach(function(p){
+      html += '<tr><td>'+fdt(soData(p.data))+'</td><td>'+fmt(p.valor)+'</td><td>'+es(PAGAMENTO_LABEL[p.forma]||p.forma||"—")+'</td><td>'+es(p.obs||"—")+'</td></tr>';
+    });
+    html += '</tbody></table>';
+    html += '<div class="setupNote" style="margin-top:1rem;">Total pago: <strong>'+fmt(totalPago)+'</strong> de '+fmt(valorTotal)+' · Saldo em aberto: <strong>'+fmt(Math.max(0,valorTotal-totalPago))+'</strong></div>';
+    corpo.innerHTML = html;
+  }
+  document.getElementById("modalHistorico").classList.add("show");
+}
+function fecharModalHistorico(){ document.getElementById("modalHistorico").classList.remove("show"); }
 
 /* ---------- Contas a receber ---------- */
 function abrirModalContaReceber(id){
@@ -2931,26 +3163,6 @@ function salvarFolha(){
 function aprovarFolha(id){
   db.collection("folhas").doc(id).update({status:"aprovado"}).catch(function(err){ alert("Erro: "+err.message); });
 }
-function pagarFolha(id){
-  var f = S.folhas.find(function(x){return x.id===id;});
-  if(!f) return;
-  var lote = db.batch();
-  lote.update(db.collection("folhas").doc(id), {status:"pago", pagoEm:new Date().toISOString()});
-  // Regra de ouro: pagar a folha já lança a despesa correspondente no Financeiro, sem precisar cadastrar de novo.
-  lote.set(db.collection("contasPagar").doc(), {
-    descricao: "Folha — "+funcionarioNome(f.funcionarioId)+" ("+f.periodo+")",
-    categoria: "Salários",
-    centroCustoId: null,
-    temporadaId: f.temporadaId || null,
-    vencimento: hj(),
-    valor: f.totalPagar,
-    status: "pago",
-    pagoEm: new Date().toISOString(),
-    origemFolhaId: id,
-    empresaId: EMPRESA_ID
-  });
-  lote.commit().catch(function(err){ alert("Erro: "+err.message); });
-}
 
 /* ---------- Marketing & CRM ---------- */
 function abrirModalCampanha(id){
@@ -3095,6 +3307,7 @@ document.addEventListener("click", function(e){
   if(e.target.id === "btnSalvarTipoIngresso"){ salvarTipoIngresso(); return; }
   if(e.target.id === "btnVenderIngresso"){ venderIngresso(); return; }
   if(e.target.id === "btnValidarIngresso"){ validarIngresso(); return; }
+  if((el = e.target.closest("[data-cancelar-ingresso]"))){ cancelarIngresso(el.dataset.cancelarIngresso); return; }
 
   if((el = e.target.closest("[data-abrir-produto]"))){ abrirModalProduto(el.dataset.abrirProduto); return; }
   if(e.target.id === "btnCancelarProduto"){ fecharModalProduto(); return; }
@@ -3116,7 +3329,22 @@ document.addEventListener("click", function(e){
   if((el = e.target.closest("[data-abrir-conta-pagar]"))){ abrirModalContaPagar(el.dataset.abrirContaPagar); return; }
   if(e.target.id === "btnCancelarContaPagar"){ fecharModalContaPagar(); return; }
   if(e.target.id === "btnSalvarContaPagar"){ salvarContaPagar(); return; }
-  if((el = e.target.closest("[data-marcar-pago]"))){ marcarContaPagarPaga(el.dataset.marcarPago); return; }
+  if((el = e.target.closest("[data-lancar-gasto-centro]"))){ abrirModalContaPagar("nova", el.dataset.lancarGastoCentro); return; }
+
+  if((el = e.target.closest("[data-abrir-pagamento]"))){
+    var partes = el.dataset.abrirPagamento.split(":");
+    abrirModalPagamento(partes[0], partes.slice(1).join(":"));
+    return;
+  }
+  if(e.target.id === "btnCancelarPagamento"){ fecharModalPagamento(); return; }
+  if(e.target.id === "btnSalvarPagamento"){ salvarPagamento(); return; }
+
+  if((el = e.target.closest("[data-abrir-historico]"))){
+    var partesH = el.dataset.abrirHistorico.split(":");
+    abrirModalHistorico(partesH[0], partesH.slice(1).join(":"));
+    return;
+  }
+  if(e.target.id === "btnFecharHistorico"){ fecharModalHistorico(); return; }
 
   if((el = e.target.closest("[data-abrir-conta-receber]"))){ abrirModalContaReceber(el.dataset.abrirContaReceber); return; }
   if(e.target.id === "btnCancelarContaReceber"){ fecharModalContaReceber(); return; }
@@ -3135,7 +3363,6 @@ document.addEventListener("click", function(e){
   if(e.target.id === "btnCancelarFolha"){ fecharModalFolha(); return; }
   if(e.target.id === "btnSalvarFolha"){ salvarFolha(); return; }
   if((el = e.target.closest("[data-aprovar-folha]"))){ aprovarFolha(el.dataset.aprovarFolha); return; }
-  if((el = e.target.closest("[data-pagar-folha]"))){ pagarFolha(el.dataset.pagarFolha); return; }
 
   if((el = e.target.closest("[data-abrir-campanha]"))){ abrirModalCampanha(el.dataset.abrirCampanha); return; }
   if(e.target.id === "btnCancelarCampanha"){ fecharModalCampanha(); return; }
